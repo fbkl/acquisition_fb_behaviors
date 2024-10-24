@@ -59,7 +59,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('vicon_ip', '192.168.1.103')
 		self.add_parameter('vicon_port', 1030)
 		self.add_parameter('session_id', 'SESSION1')
-		self.add_parameter('activity_name', 'test')
+		self.add_parameter('activity_name', 'test1')
 		self.add_parameter('subject_id', 'SUB01')
 		self.add_parameter('weight', 0)
 		self.add_parameter('height', 0)

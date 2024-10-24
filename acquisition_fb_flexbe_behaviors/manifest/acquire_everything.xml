@@ -45,7 +45,7 @@
 
 		<param type="text" name="session_id" default="SESSION1" label="session_id" hint="Sets the session_id" />
 
-		<param type="text" name="activity_name" default="test" label="activity_name" hint="Sets the activity_name" />
+		<param type="text" name="activity_name" default="test1" label="activity_name" hint="Sets the activity_name" />
 
 		<param type="text" name="subject_id" default="SUB01" label="subject_id" hint="Sets the subject_id" />
 

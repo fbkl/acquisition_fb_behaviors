@@ -24,7 +24,7 @@ class VariableTmuxSetupFromYamlState(EventState):
                 input_keys = ["node_start_list","load_env"],
                 output_keys = ["node_start_list"])
 
-
+        self._tmux_manager = None
         # Store state parameter for later use.
         self._session_name = session_name
         self._errors= []
@@ -88,6 +88,6 @@ class VariableTmuxSetupFromYamlState(EventState):
     def on_stop(self):
         # This method is called whenever the behavior stops execution, also if it is cancelled.
         # Use this event to clean up things like claimed resources.
-
-        self._tmux_manager.close_own_windows()
+        if self._tmux_manager:
+            self._tmux_manager.close_own_windows()
 
