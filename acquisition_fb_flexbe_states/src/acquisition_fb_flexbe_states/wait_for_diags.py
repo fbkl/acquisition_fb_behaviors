@@ -67,8 +67,9 @@ class WaitForDiags(EventState):
                         break
 
         except Exception as e:
-            st = traceback.format_stack()
-            traceback.print_stack()
+            return 'continue'
+            #st = traceback.format_stack()
+            #traceback.print_stack()
             Logger.logerr("I failed while waiting for diags: {}\n{}".format(str(e),str(st)))
             return 'failed'
 

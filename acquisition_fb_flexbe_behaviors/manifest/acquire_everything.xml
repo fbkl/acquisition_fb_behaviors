@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<behavior name="Acquire_everything">
+<behavior name="Acquire_Everything">
 
-	<executable package_path="acquisition_fb_flexbe_behaviors.acquire_everything_sm" class="Acquire_everythingSM" />
+	<executable package_path="acquisition_fb_flexbe_behaviors.acquire_everything_sm" class="Acquire_EverythingSM" />
 	<tagstring>acquisition, tmux, sound, old_heading, upright, ar</tagstring>
 	<author>frekle</author>
-	<date>Mon Apr 22 2024</date>
+	<date>Wed Oct 23 2024</date>
 	<description>
 		acquire using embeddable IMU behavior
 - with tmux 
@@ -13,6 +13,7 @@
 - IK using old heading 
 - playing sounds
 - now tries to add camera as well
+- adds rqt_acquisition
 	</description>
 
 
@@ -23,92 +24,11 @@
 	<!-- Available Parameters -->
 	<params>
 
-		<param type="text" name="activity_name" default="walking" label="activity_name" hint="Sets the activity_name" />
-
-		<param type="numeric" name="subject_num" default="0" label="subject_num" hint="Sets the subject_num">
-			<min value="0" />
-			<max value="100" />
-		</param>
-
-		<param type="boolean" name="run_insoles" default="False" label="run_insoles" hint="Sets the run_insoles" />
+		<param type="boolean" name="run_insoles" default="True" label="run_insoles" hint="Sets the run_insoles" />
 
 		<param type="boolean" name="run_id" default="True" label="run_id" hint="Sets the run_id" />
 
 		<param type="boolean" name="run_so" default="False" label="run_so" hint="Sets the run_so" />
-
-		<param type="numeric" name="weight" default="0" label="weight" hint="Sets the weight">
-			<min value="0" />
-			<max value="1" />
-		</param>
-
-		<param type="enum" name="height" default="1.75 m" label="height" hint="Sets the height">
-			<option value="1.40 m" />
-			<option value="1.41 m" />
-			<option value="1.42 m" />
-			<option value="1.43 m" />
-			<option value="1.44 m" />
-			<option value="1.45 m" />
-			<option value="1.46 m" />
-			<option value="1.47 m" />
-			<option value="1.48 m" />
-			<option value="1.49 m" />
-			<option value="1.50 m" />
-			<option value="1.51 m" />
-			<option value="1.52 m" />
-			<option value="1.53 m" />
-			<option value="1.54 m" />
-			<option value="1.55 m" />
-			<option value="1.56 m" />
-			<option value="1.57 m" />
-			<option value="1.58 m" />
-			<option value="1.59 m" />
-			<option value="1.60 m" />
-			<option value="1.61 m" />
-			<option value="1.62 m" />
-			<option value="1.63 m" />
-			<option value="1.64 m" />
-			<option value="1.65 m" />
-			<option value="1.66 m" />
-			<option value="1.67 m" />
-			<option value="1.68 m" />
-			<option value="1.69 m" />
-			<option value="1.70 m" />
-			<option value="1.71 m" />
-			<option value="1.72 m" />
-			<option value="1.73 m" />
-			<option value="1.74 m" />
-			<option value="1.75 m" />
-			<option value="1.76 m" />
-			<option value="1.77 m" />
-			<option value="1.78 m" />
-			<option value="1.79 m" />
-			<option value="1.80 m" />
-			<option value="1.81 m" />
-			<option value="1.82 m" />
-			<option value="1.83 m" />
-			<option value="1.84 m" />
-			<option value="1.85 m" />
-			<option value="1.86 m" />
-			<option value="1.87 m" />
-			<option value="1.88 m" />
-			<option value="1.89 m" />
-			<option value="1.90 m" />
-			<option value="1.91 m" />
-			<option value="1.92 m" />
-			<option value="1.93 m" />
-			<option value="1.94 m" />
-			<option value="1.95 m" />
-			<option value="1.96 m" />
-			<option value="1.97 m" />
-			<option value="1.98 m" />
-			<option value="1.99 m" />
-		</param>
-
-		<param type="enum" name="insole_size" default="S6 (42-43)" label="insole_size" hint="Sets the insole_size">
-			<option value="S3 (36-37)" />
-			<option value="S4 (38-39)" />
-			<option value="S6 (42-43)" />
-		</param>
 
 		<param type="boolean" name="run_vicon_controller" default="True" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
 
@@ -121,6 +41,28 @@
 		<param type="numeric" name="vicon_port" default="1030" label="vicon_port" hint="Sets the vicon_port">
 			<min value="0" />
 			<max value="70000" />
+		</param>
+
+		<param type="text" name="session_id" default="SESSION1" label="session_id" hint="Sets the session_id" />
+
+		<param type="text" name="activity_name" default="test" label="activity_name" hint="Sets the activity_name" />
+
+		<param type="text" name="subject_id" default="SUB01" label="subject_id" hint="Sets the subject_id" />
+
+		<param type="numeric" name="weight" default="0" label="weight [kg]" hint="Sets the weight">
+			<min value="0" />
+			<max value="1000" />
+		</param>
+
+		<param type="numeric" name="height" default="0" label="height [m]" hint="Sets the height">
+			<min value="0" />
+			<max value="3" />
+		</param>
+
+		<param type="enum" name="insole_size" default="S6 (42-43)" label="insole_size" hint="Sets the insole_size">
+			<option value="S3 (36-37)" />
+			<option value="S4 (38-39)" />
+			<option value="S6 (42-43)" />
 		</param>
 
 	</params>

@@ -32,7 +32,7 @@ class MultiServiceCallState(EventState):
         for an_srv_name in multi_service_list:
             self._multi_service_list.append(self._prefix+an_srv_name+self._predicate)
         Logger.loginfo("received list of services to be called: %s" % self._multi_service_list)
-        self._multi_service_plex = multiservice_plex.MultiServiceCaller(self._multi_service_list)
+        self._multi_service_plex = multiservice_plex.MultiServiceCaller(self._multi_service_list, wait_for_responses = True)
 
         # The constructor is called when building the state machine, not when actually starting the behavior.
         # Thus, we cannot save the starting time now and will do so later.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-
+import traceback
 from flexbe_core import EventState, Logger
 from tmux_launch.tmux_session_manager import *
 
@@ -22,8 +22,10 @@ class TmuxSetupState(EventState):
         # Store state parameter for later use.
         self._session_name = session_name
         self._startup_dic = startup_dic
+        Logger.loghint("__init before creating TmuxManager")
         self._tmux_manager = TmuxManager(self._session_name)
         ## TODO: this only works if you have a single session
+        Logger.loghint("__init before getting Session")
         self._tmux_manager.session = self._tmux_manager.srv.sessions.get()
     def execute(self, userdata):
         return 'continue' # One of the outcomes declared above.
@@ -31,7 +33,13 @@ class TmuxSetupState(EventState):
 
     def on_enter(self, userdata):
         ##manager already exists and also the session, we only attach and create the windows
-        create_some_windows(window_dic=self._startup_dic, some_manager= self._tmux_manager)
+        Logger.loghint("on_enter before creating some windows")
+        try:
+            create_some_windows(window_dic=self._startup_dic, some_manager= self._tmux_manager)
+        except Exception as e:
+            Logger.logerr(repr(e))
+            traceback.print_exc()
+            return 'failed'
         ## I should detect failures, shouldnt I?
 
 
@@ -54,5 +62,5 @@ class TmuxSetupState(EventState):
         # This method is called whenever the behavior stops execution, also if it is cancelled.
         # Use this event to clean up things like claimed resources.
 
-        pass # Nothing to do in this example.
+        self._tmux_manager.close_own_windows()
 

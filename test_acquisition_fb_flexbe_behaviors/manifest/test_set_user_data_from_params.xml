@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="test_set_user_data_from_params">
+
+	<executable package_path="test_acquisition_fb_flexbe_behaviors.test_set_user_data_from_params_sm" class="test_set_user_data_from_paramsSM" />
+	<tagstring>test</tagstring>
+	<author>bfk</author>
+	<date>Wed Oct 23 2024</date>
+	<description>
+		test of set_user_data_from_params state
+	</description>
+
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>
