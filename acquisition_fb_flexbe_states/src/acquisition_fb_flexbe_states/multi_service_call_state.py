@@ -4,6 +4,7 @@ import rospy
 from flexbe_core import EventState, Logger
 from acquisition_of_raw_data import multiservice_plex
 from std_srvs.srv import EmptyRequest
+import traceback
 
 class MultiServiceCallState(EventState):
     '''
@@ -18,7 +19,7 @@ class MultiServiceCallState(EventState):
 
     '''
 
-    def __init__(self, multi_service_list, predicate,prefix):
+    def __init__(self, multi_service_list, predicate,prefix,wait_to_start=False,timeout=60):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
         super(MultiServiceCallState, self).__init__(outcomes = ['done', 'failed'])
 
@@ -32,7 +33,7 @@ class MultiServiceCallState(EventState):
         for an_srv_name in multi_service_list:
             self._multi_service_list.append(self._prefix+an_srv_name+self._predicate)
         Logger.loginfo("received list of services to be called: %s" % self._multi_service_list)
-        self._multi_service_plex = multiservice_plex.MultiServiceCaller(self._multi_service_list, wait_for_responses = True)
+        self._multi_service_plex = multiservice_plex.MultiServiceCaller(self._multi_service_list, wait_to_start=wait_to_start, wait_for_responses = True, timeout=rospy.Duration(timeout))
 
         # The constructor is called when building the state machine, not when actually starting the behavior.
         # Thus, we cannot save the starting time now and will do so later.
@@ -47,7 +48,12 @@ class MultiServiceCallState(EventState):
         if self._multi_service_plex.error_list == []:
             return 'done' # One of the outcomes declared above.
         else:
-            Logger.logwarn(str(self._multi_service_plex.error_list))
+            error_message = ""
+            for error_msgs in self._multi_service_plex.error_list:
+                error_message+= error_msgs
+                error_message+= "\n"
+
+            Logger.logerr(error_message)
             return 'failed'
 
 
@@ -64,8 +70,12 @@ class MultiServiceCallState(EventState):
         #	Logger.loginfo('Need to wait for %.1f seconds.' % time_to_wait)
 
         ## does call
-
-        self._multi_service_plex(EmptyRequest())
+        try:
+            self._multi_service_plex(EmptyRequest())
+        except:
+            
+            traceback.print_exc()
+            return 'failed'
 
 
     def on_exit(self, userdata):

@@ -50,7 +50,7 @@ class ar_brioSM(Behavior):
 		start_up_yaml = "ar.yaml"
 		yaml_config_dir = "/catkin_ws/src/ros_biomech/acquisition_state_machines/acquisition_of_raw_data/config/"
 		# x:30 y:365, x:200 y:456
-		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
+		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], output_keys=['should_load_ar'])
 		_state_machine.userdata.node_start_list = []
 		_state_machine.userdata.load_env = {"CAM_DEV":str(self.camera_dev_num)}
 		_state_machine.userdata.should_load_ar = self.load_ar_nodes
@@ -62,7 +62,7 @@ class ar_brioSM(Behavior):
 
 
 		with _state_machine:
-			# x:30 y:40
+			# x:145 y:132
 			OperatableStateMachine.add('Shoul_Load_Ar',
 										CheckConditionState(predicate=lambda x: bool(x)),
 										transitions={'true': 'Load_Ar_Nodes', 'false': 'finished'},

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="test_embedding_ar">
+
+	<executable package_path="acquisition_fb_flexbe_behaviors.test_embedding_ar_sm" class="test_embedding_arSM" />
+	<tagstring>test, ar, embedding</tagstring>
+	<author>fbk</author>
+	<date>Fri Oct 25 2024</date>
+	<description>
+		.
+	</description>
+
+
+	<!-- Contained Behaviors -->
+	<contains name="ar_brio" />
+
+	<!-- Available Parameters -->
+
+</behavior>

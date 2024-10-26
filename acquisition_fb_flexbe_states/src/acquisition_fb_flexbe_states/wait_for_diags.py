@@ -17,7 +17,7 @@ class WaitForDiags(EventState):
 
     '''
 
-    def __init__(self, diags_list, timeout=600, response_list_size=200):
+    def __init__(self, diags_list, timeout=60):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
         super(WaitForDiags, self).__init__(outcomes = ['continue', 'failed'])
 
@@ -30,14 +30,12 @@ class WaitForDiags(EventState):
         self._initial_diags_len = len(self._diags_list)
         self._initial_time = None
         self._timeout_time = rospy.Duration(timeout)
-        self._response_deque = deque([], maxlen=response_list_size)
 
-    def remove_from_diags_list_if_matches(self, a_diag):
-        for a_response in self._response_deque:
-            for status in a_response.status:
-                if a_diag in status.name and a_diag in self._diags_list:
-                    self._diags_list.remove(a_diag)
-                    return True
+    def remove_from_diags_list_if_matches(self, a_response, a_diag):
+        for status in a_response.status:
+            if a_diag in status.name and a_diag in self._diags_list:
+                self._diags_list.remove(a_diag)
+                return True
         return False
 
 
@@ -47,37 +45,32 @@ class WaitForDiags(EventState):
         # If no outcome is returned, the state will stay active.
         if len(self._diags_list) == 0:
             return 'continue'
-
-        #return 'continue'
+        if rospy.Time.now() > self._initial_time + self._timeout_time:
+            Logger.logerr(f"Did not receive all the diagnostic_msgs:\n{self._diags_list}\nin the time prescribed. Timeout exceeded")
+            return 'failed'
+        
         try:
-            i=0
-            
-            while len(self._diags_list) > 0:
-                Logger.loghint(f"looking for stuff\nState:\n{self._diags_list}\n{self._response_deque}")
-                if rospy.Time.now() > self._initial_time + self._timeout_time:
-                    Logger.logerr("Timeout exceeded")
-                    return 'failed'
-                some_response = rospy.wait_for_message("/diagnostics", DiagnosticArray, timeout=self._timeout_time.to_sec()/self._initial_diags_len)
-                self._response_deque.append(some_response)
+            a_response = rospy.wait_for_message("/diagnostics", DiagnosticArray, timeout=self._timeout_time.to_sec()/self._initial_diags_len)
 
-                for a_diag in self._diags_list:
-                    Logger.loghint(f"Looking for diags from {a_diag}")
-
-                    if self.remove_from_diags_list_if_matches(a_diag):
-                        break
+            for a_diag in self._diags_list:
+                #Logger.loghint(f"Looking for diags from {a_diag}")
+                if self.remove_from_diags_list_if_matches(a_response,a_diag):
+                    break
 
         except Exception as e:
             return 'continue'
             #st = traceback.format_stack()
-            #traceback.print_stack()
-            Logger.logerr("I failed while waiting for diags: {}\n{}".format(str(e),str(st)))
+            
+            traceback.print_exc()
+            #Logger.logerr("I failed while waiting for diags: {}\n{}".format(str(e),str(st)))
             return 'failed'
-
 
     def on_enter(self, userdata):
         # This method is called when the state becomes active, i.e. a transition from another state to this one is taken.
         # It is primarily used to start actions which are associated with this state.
+        #return 'continue'
         self._initial_time = rospy.Time.now()
+        Logger.loghint(f"looking for DiagnosticStatus from: \n{self._diags_list}")
 
     def on_exit(self, userdata):
         # This method is called when an outcome is returned and another state gets active.

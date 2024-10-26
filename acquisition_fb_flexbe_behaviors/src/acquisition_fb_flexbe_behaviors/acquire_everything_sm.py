@@ -15,14 +15,15 @@ from acquisition_fb_flexbe_states.check_if_alive import HostAliveState
 from acquisition_fb_flexbe_states.env_vars_userdata_setter import MomentArmAndLibraryEnvSetterUserDataState
 from acquisition_fb_flexbe_states.multi_service_call_state import MultiServiceCallState
 from acquisition_fb_flexbe_states.multi_set_some_param_state import MultiSetSomeParamState
+from acquisition_fb_flexbe_states.play_sound_state import PlaySoundState
 from acquisition_fb_flexbe_states.tmux_setup_state import TmuxSetupState
 from acquisition_fb_flexbe_states.userdata_from_params_state import UserDataFromParamsState
 from acquisition_fb_flexbe_states.variable_multi_service_call_state import VariableMultiServiceCallState
 from acquisition_fb_flexbe_states.variable_set_name_and_path_from_param_state import VariableMultiSetNameAndPathFromParamState
+from acquisition_fb_flexbe_states.wait_for_messages import WaitForMessages
 from flexbe_states.check_condition_state import CheckConditionState
 from flexbe_states.log_state import LogState
 from flexbe_states.operator_decision_state import OperatorDecisionState
-from flexbe_states.wait_state import WaitState
 # Additional imports can be added inside the following tags
 # [MANUAL_IMPORT]
 
@@ -115,7 +116,7 @@ class Acquire_EverythingSM(Behavior):
 		model_name = f"gait1992_{str(self.height*100)}"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}.so"
-		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"SHOW_VIZ_OTHER":"true"}
+		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"SHOW_VIZ_OTHER":"true","USE_AR":"true"}
 		# x:1421 y:812, x:162 y:458
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
@@ -126,6 +127,8 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.node_start_list = []
 		_state_machine.userdata.use_vicon_controller = self.run_vicon_controller
 		_state_machine.userdata.parked_nodes = ["/ik"]
+		_state_machine.userdata.export_vars = export_vars
+		_state_machine.userdata.should_load_ar = {}
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -172,7 +175,7 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:1304 y:830, x:862 y:381
-		_sm_acquisition_setup_1 = OperatableStateMachine(outcomes=['finished', 'failed'], output_keys=['export_vars'])
+		_sm_acquisition_setup_1 = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['export_vars', 'should_load_ar'], output_keys=['export_vars'])
 
 		with _sm_acquisition_setup_1:
 			# x:420 y:52
@@ -216,7 +219,7 @@ class Acquire_EverythingSM(Behavior):
 										MomentArmAndLibraryEnvSetterUserDataState(),
 										transitions={'done': 'call_disable_setting_model_in_acquision'},
 										autonomy={'done': Autonomy.Off},
-										remapping={'model': 'model_path', 'lib': 'lib_path', 'env_vars': 'export_vars'})
+										remapping={'model': 'model_path', 'lib': 'lib_path', 'should_load_ar': 'should_load_ar', 'env_vars': 'export_vars'})
 
 			# x:417 y:714
 			OperatableStateMachine.add('Update_Lib',
@@ -234,7 +237,7 @@ class Acquire_EverythingSM(Behavior):
 
 			# x:758 y:811
 			OperatableStateMachine.add('call_disable_setting_model_in_acquision',
-										MultiServiceCallState(multi_service_list="/rqt_acquisition/set_running", predicate="", prefix=""),
+										MultiServiceCallState(multi_service_list="/rqt_acquisition/set_running", predicate="", prefix="", wait_to_start=False, timeout=60),
 										transitions={'done': 'finished', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
@@ -246,17 +249,17 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller'], output_keys=['node_start_list'])
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar'], output_keys=['node_start_list'])
 
 		with _sm_node_startup_2:
-			# x:68 y:66
-			OperatableStateMachine.add('Acquisition_Setup',
-										_sm_acquisition_setup_1,
-										transitions={'finished': 'ar_brio', 'failed': 'failed'},
+			# x:177 y:32
+			OperatableStateMachine.add('ar_brio',
+										self.use_behavior(ar_brioSM, 'Node_Startup/ar_brio'),
+										transitions={'finished': 'Acquisition_Setup', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'export_vars': 'export_vars'})
+										remapping={'should_load_ar': 'should_load_ar'})
 
-			# x:479 y:446
+			# x:491 y:554
 			OperatableStateMachine.add('Load_ID_Nodes',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+id_yaml, append_node=["/id_node"]),
 										transitions={'continue': 'Run_SO', 'failed': 'failed'},
@@ -277,7 +280,7 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'load_env': 'export_vars'})
 
-			# x:472 y:542
+			# x:359 y:725
 			OperatableStateMachine.add('Load_SO_Nodes',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+so_yaml, append_node=["/so_node"]),
 										transitions={'continue': 'ok', 'failed': 'failed'},
@@ -291,7 +294,7 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'load_env': 'export_vars'})
 
-			# x:286 y:340
+			# x:300 y:448
 			OperatableStateMachine.add('Run_ID',
 										CheckConditionState(predicate=lambda x: bool(x)),
 										transitions={'true': 'Load_ID_Nodes', 'false': 'ok'},
@@ -305,7 +308,7 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_insoles'})
 
-			# x:286 y:421
+			# x:306 y:549
 			OperatableStateMachine.add('Run_SO',
 										CheckConditionState(predicate=lambda x: bool(x)),
 										transitions={'true': 'Load_SO_Nodes', 'false': 'ok'},
@@ -319,17 +322,24 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_controller'})
 
-			# x:515 y:362
+			# x:504 y:352
 			OperatableStateMachine.add('Turn_On_Insoles',
 										LogState(text="Turn on Tablet and insoles and put shoes on", severity=Logger.REPORT_HINT),
-										transitions={'done': 'Run_ID'},
+										transitions={'done': 'Turn_On_Insoles_Now'},
 										autonomy={'done': Autonomy.Full})
 
-			# x:295 y:26
-			OperatableStateMachine.add('ar_brio',
-										self.use_behavior(ar_brioSM, 'Node_Startup/ar_brio'),
+			# x:515 y:449
+			OperatableStateMachine.add('Turn_On_Insoles_Now',
+										WaitForMessages(topics_list=["/left/insole","/right/insole"], custom_message="Please start acquiring insoles now.", timeout=40),
+										transitions={'continue': 'Run_ID', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:530 y:23
+			OperatableStateMachine.add('Acquisition_Setup',
+										_sm_acquisition_setup_1,
 										transitions={'finished': 'Run_Vicon_Controller', 'failed': 'failed'},
-										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit})
+										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
+										remapping={'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar'})
 
 
 		# x:264 y:58, x:130 y:432
@@ -356,13 +366,25 @@ class Acquire_EverythingSM(Behavior):
 										_sm_node_startup_2,
 										transitions={'failed': 'failed', 'ok': 'Check_If_Devices_Are_On'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
-										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller'})
+										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar'})
+
+			# x:788 y:614
+			OperatableStateMachine.add('Calibration_Complete',
+										PlaySoundState(sound_file="/srv/host_data/calib_complete.wav", retries=5),
+										transitions={'continue': 'Say_To_Change_Name', 'failed': 'Say_To_Change_Name'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
 			# x:650 y:17
 			OperatableStateMachine.add('Check_If_Devices_Are_On',
 										_sm_check_if_devices_are_on_3,
 										transitions={'done': 'Imu_Startup_Sequence', 'fail': 'failed'},
 										autonomy={'done': Autonomy.Inherit, 'fail': Autonomy.Inherit})
+
+			# x:659 y:462
+			OperatableStateMachine.add('Get_Ready_For_Calibration',
+										PlaySoundState(sound_file="/srv/host_data/calib.wav", retries=5),
+										transitions={'continue': 'Calibrate_IK', 'failed': 'Calibrate_IK'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
 			# x:650 y:161
 			OperatableStateMachine.add('Imu_Startup_Sequence',
@@ -372,20 +394,26 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'imu_list': 'imu_list'})
 
-			# x:1093 y:625
+			# x:1154 y:714
 			OperatableStateMachine.add('Record_Another',
 										OperatorDecisionState(outcomes=["yes", "no"], hint=None, suggestion=None),
-										transitions={'yes': 'Calibrate_IK', 'no': 'finished'},
+										transitions={'yes': 'Get_Ready_For_Calibration', 'no': 'finished'},
 										autonomy={'yes': Autonomy.Off, 'no': Autonomy.Off})
 
-			# x:650 y:798
+			# x:652 y:866
 			OperatableStateMachine.add('Recording_trial',
 										_sm_recording_trial_0,
-										transitions={'failed': 'failed', 'done': 'Record_Another'},
+										transitions={'failed': 'failed', 'done': 'Trial_Finished'},
 										autonomy={'failed': Autonomy.Inherit, 'done': Autonomy.Inherit},
 										remapping={'node_start_list': 'node_start_list'})
 
-			# x:595 y:623
+			# x:508 y:618
+			OperatableStateMachine.add('Say_To_Change_Name',
+										LogState(text="Please make sure you updated the name of the trial", severity=Logger.REPORT_HINT),
+										transitions={'done': 'Sets_Filename_And_Path_From_Rqt_Acquistion_Params'},
+										autonomy={'done': Autonomy.Full})
+
+			# x:586 y:690
 			OperatableStateMachine.add('Sets_Filename_And_Path_From_Rqt_Acquistion_Params',
 										VariableMultiSetNameAndPathFromParamState(prefix="", suffix="/set_name_and_path", filename_param="rqt_acquisition/activity_name", dirname_param="rqt_acquisition/save_path"),
 										transitions={'done': 'Start_Recording_Question_Mark', 'failed': 'failed'},
@@ -395,26 +423,32 @@ class Acquire_EverythingSM(Behavior):
 			# x:658 y:276
 			OperatableStateMachine.add('Start_Parked_Nodes',
 										VariableMultiServiceCallState(predicate="/start_now", prefix=""),
-										transitions={'done': 'Wait_For_Nodes_To_Be_Ready', 'failed': 'failed'},
+										transitions={'done': 'Wait_For_Ik_To_Be_Ready', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'parked_nodes'})
 
-			# x:650 y:720
+			# x:630 y:776
 			OperatableStateMachine.add('Start_Recording_Question_Mark',
 										LogState(text="Is the calibration and the heading OK?\n Proceeding will start recording the trial", severity=Logger.REPORT_HINT),
 										transitions={'done': 'Recording_trial'},
 										autonomy={'done': Autonomy.Full})
 
-			# x:650 y:387
-			OperatableStateMachine.add('Wait_For_Nodes_To_Be_Ready',
-										WaitState(wait_time=5),
-										transitions={'done': 'Calibrate_IK'},
-										autonomy={'done': Autonomy.Full})
+			# x:922 y:823
+			OperatableStateMachine.add('Trial_Finished',
+										PlaySoundState(sound_file="/srv/host_data/end.wav", retries=5),
+										transitions={'continue': 'Record_Another', 'failed': 'Record_Another'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:664 y:391
+			OperatableStateMachine.add('Wait_For_Ik_To_Be_Ready',
+										WaitForMessages(topics_list="/ik/output_filtered", custom_message="Waiting for IK node to start", timeout=1000),
+										transitions={'continue': 'Get_Ready_For_Calibration', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
 			# x:650 y:538
 			OperatableStateMachine.add('Calibrate_IK',
-										MultiServiceCallState(multi_service_list="/ik", predicate="/calibrate", prefix=""),
-										transitions={'done': 'Sets_Filename_And_Path_From_Rqt_Acquistion_Params', 'failed': 'failed'},
+										MultiServiceCallState(multi_service_list="/ik", predicate="/calibrate", prefix="", wait_to_start=False, timeout=60),
+										transitions={'done': 'Calibration_Complete', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
 

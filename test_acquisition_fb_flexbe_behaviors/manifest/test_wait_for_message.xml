@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="test_wait_for_message">
+
+	<executable package_path="test_acquisition_fb_flexbe_behaviors.test_wait_for_message_sm" class="test_wait_for_messageSM" />
+	<tagstring></tagstring>
+	<author>fbk</author>
+	<date>Thu Oct 24 2024</date>
+	<description>
+		.
+	</description>
+
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>

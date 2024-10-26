@@ -17,7 +17,7 @@ class PlaySoundState(EventState):
 
     '''
 
-    def __init__(self, sound_file):
+    def __init__(self, sound_file, retries=5):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
         super(PlaySoundState, self).__init__(outcomes = ['continue', 'failed'])
 
@@ -29,7 +29,11 @@ class PlaySoundState(EventState):
 
         # The constructor is called when building the state machine, not when actually starting the behavior.
         self._p = None
+        self._retries = retries
+        self._tries = 0
         #self.order = ["init"]
+
+
 
     def execute(self, userdata):
         # This method is called periodically while the state is active.
@@ -44,11 +48,19 @@ class PlaySoundState(EventState):
             if self._p.returncode == 0: 
                 return 'continue' # One of the outcomes declared above.
             else:
-                Logger.loginfo(output)
-                Logger.logerr(err)
+                if self._tries < self._retries:
+                    self.do_try()
+                else:
+                    Logger.logerr("Maximum number of retries reached.");
+                    Logger.loginfo(output)
+                    Logger.logerr(err)
                 return 'failed'
         #print(self.order)
         #self.order.append("execute")
+
+    def do_try(self):
+        self._tries+=1
+        self._p = subprocess.Popen(["aplay",self._sound_file], stdin= subprocess.PIPE, stdout= subprocess.PIPE, stderr= subprocess.PIPE)
 
     def on_enter(self, userdata):
         # This method is called when the state becomes active, i.e. a transition from another state to this one is taken.
@@ -58,7 +70,7 @@ class PlaySoundState(EventState):
         # Text logged by the behavior logger is sent to the operator and displayed in the GUI.
 
         Logger.loginfo("Play!")
-        self._p = subprocess.Popen(["aplay",self._sound_file], stdin= subprocess.PIPE, stdout= subprocess.PIPE, stderr= subprocess.PIPE)
+        self.do_try()
         #self.order.append("on_enter")
         #print(self.order)
 

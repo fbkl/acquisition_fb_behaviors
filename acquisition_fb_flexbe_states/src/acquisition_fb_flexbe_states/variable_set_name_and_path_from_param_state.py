@@ -91,7 +91,7 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
         req = SetFileNameSrvRequest()
         req.name = _file_name
         req.path = _save_dir
-        Logger.log("my req msg: "+str(req),Logger.REPORT_HINT )
+        Logger.log("My Savefile and Path request msg: "+str(req),Logger.REPORT_HINT )
         _, self._responses = self._multi_service_plex(req)
 
 
