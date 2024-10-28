@@ -65,6 +65,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('weight', 0)
 		self.add_parameter('height', 0)
 		self.add_parameter('insole_size', 'S6 (42-43)')
+		self.add_parameter('combined_acquisition', True)
 
 		# references to used behaviors
 		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
@@ -116,7 +117,8 @@ class Acquire_EverythingSM(Behavior):
 		model_name = f"gait1992_{str(self.height*100)}"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}.so"
-		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"SHOW_VIZ_OTHER":"true","USE_AR":"true"}
+		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"SHOW_VIZ_OTHER":"true","USE_AR":"true","COMBINED_ACQUISITION":self.combined_acquisition}
+		combined_perspective_file = "/catkin_ws/src/ros_biomech/acquisition_state_machines/rqt_acquisition/Control_Acquisition_small_tabs.perspective"
 		# x:1421 y:812, x:162 y:458
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
@@ -129,6 +131,7 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.parked_nodes = ["/ik"]
 		_state_machine.userdata.export_vars = export_vars
 		_state_machine.userdata.should_load_ar = {}
+		_state_machine.userdata.use_combined_acquisition = self.combined_acquisition
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -175,7 +178,7 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:1304 y:830, x:862 y:381
-		_sm_acquisition_setup_1 = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['export_vars', 'should_load_ar'], output_keys=['export_vars'])
+		_sm_acquisition_setup_1 = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['export_vars', 'should_load_ar', 'use_combined_acquisition'], output_keys=['export_vars'])
 
 		with _sm_acquisition_setup_1:
 			# x:420 y:52
@@ -183,6 +186,18 @@ class Acquire_EverythingSM(Behavior):
 										MultiSetSomeParamState(multi_node_list=["rqt_acquisition"], param_to_set="model_path", value_of_param=model_file, check_if_nodes_exist=False),
 										transitions={'done': 'Set_Lib_Path', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:108 y:616
+			OperatableStateMachine.add('Load_Combined_Perspective',
+										TmuxSetupState(session_name=tmux_session_name, startup_dic={"acq":[f"rqt --perspective-file {combined_perspective_file}"]}),
+										transitions={'continue': 'Update_Model', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Full})
+
+			# x:454 y:640
+			OperatableStateMachine.add('Load_Rqt_Acquisition',
+										TmuxSetupState(session_name=tmux_session_name, startup_dic={"acq":["rqt --standalone rqt_acquisition"]}),
+										transitions={'continue': 'Update_Model', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Full})
 
 			# x:422 y:210
 			OperatableStateMachine.add('Set_Activity_Name',
@@ -199,7 +214,7 @@ class Acquire_EverythingSM(Behavior):
 			# x:422 y:416
 			OperatableStateMachine.add('Set_Save_Path',
 										MultiSetSomeParamState(multi_node_list=["rqt_acquisition"], param_to_set="save_path", value_of_param=save_dir, check_if_nodes_exist=False),
-										transitions={'done': 'Load_Rqt_Acquisition', 'failed': 'failed'},
+										transitions={'done': 'Combined_Acquistion_Perspective', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
 			# x:423 y:347
@@ -214,21 +229,21 @@ class Acquire_EverythingSM(Behavior):
 										transitions={'done': 'Set_Session_Id', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
-			# x:430 y:810
+			# x:430 y:869
 			OperatableStateMachine.add('Setter',
 										MomentArmAndLibraryEnvSetterUserDataState(),
 										transitions={'done': 'call_disable_setting_model_in_acquision'},
 										autonomy={'done': Autonomy.Off},
 										remapping={'model': 'model_path', 'lib': 'lib_path', 'should_load_ar': 'should_load_ar', 'env_vars': 'export_vars'})
 
-			# x:417 y:714
+			# x:448 y:792
 			OperatableStateMachine.add('Update_Lib',
 										UserDataFromParamsState(param_path="rqt_acquisition/lib_path", data_property_name="lib_path"),
 										transitions={'done': 'Setter'},
 										autonomy={'done': Autonomy.Off},
 										remapping={'lib_path': 'lib_path'})
 
-			# x:446 y:606
+			# x:448 y:717
 			OperatableStateMachine.add('Update_Model',
 										UserDataFromParamsState(param_path="rqt_acquisition/model_path", data_property_name="model_path"),
 										transitions={'done': 'Update_Lib'},
@@ -241,15 +256,16 @@ class Acquire_EverythingSM(Behavior):
 										transitions={'done': 'finished', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
-			# x:424 y:493
-			OperatableStateMachine.add('Load_Rqt_Acquisition',
-										TmuxSetupState(session_name=tmux_session_name, startup_dic={"acq":["rqt --standalone rqt_acquisition"]}),
-										transitions={'continue': 'Update_Model', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Off})
+			# x:124 y:459
+			OperatableStateMachine.add('Combined_Acquistion_Perspective',
+										CheckConditionState(predicate=lambda x: bool(x)),
+										transitions={'true': 'Load_Combined_Perspective', 'false': 'Load_Rqt_Acquisition'},
+										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
+										remapping={'input_value': 'use_combined_acquisition'})
 
 
 		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar'], output_keys=['node_start_list'])
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition'], output_keys=['node_start_list'])
 
 		with _sm_node_startup_2:
 			# x:177 y:32
@@ -339,7 +355,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_acquisition_setup_1,
 										transitions={'finished': 'Run_Vicon_Controller', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar'})
+										remapping={'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition'})
 
 
 		# x:264 y:58, x:130 y:432
@@ -366,7 +382,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_node_startup_2,
 										transitions={'failed': 'failed', 'ok': 'Check_If_Devices_Are_On'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
-										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar'})
+										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition'})
 
 			# x:788 y:614
 			OperatableStateMachine.add('Calibration_Complete',

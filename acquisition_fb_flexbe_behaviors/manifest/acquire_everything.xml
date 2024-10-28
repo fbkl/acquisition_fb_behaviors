@@ -65,6 +65,8 @@
 			<option value="S6 (42-43)" />
 		</param>
 
+		<param type="boolean" name="combined_acquisition" default="True" label="combined_acquisition" hint="Sets the combined_acquisition" />
+
 	</params>
 
 
