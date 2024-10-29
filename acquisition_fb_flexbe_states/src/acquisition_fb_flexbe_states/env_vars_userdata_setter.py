@@ -43,6 +43,7 @@ class MomentArmAndLibraryEnvSetterUserDataState(EventState):
 
           # Add the user data
           userdata.env_vars.update(  {"MODEL_FILE": userdata.model, "MOMENT_ARM_LIB": userdata.lib, "USE_AR": userdata.should_load_ar})
+          Logger.logdebug(f"[env_vars_userdata_setter] env_vars:  {userdata.env_vars}")
           self._return_code = 'done'
         except:
             traceback.print_exc()

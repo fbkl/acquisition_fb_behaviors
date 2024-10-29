@@ -56,7 +56,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('run_so', False)
 		self.add_parameter('run_vicon_controller', True)
 		self.add_parameter('remove_path', '/srv/host_data')
-		self.add_parameter('append_path', 'd:/ViconData/Ruoli/Motion_Insole')
+		self.add_parameter('append_path', 'd:/ViconData')
 		self.add_parameter('vicon_ip', '192.168.1.103')
 		self.add_parameter('vicon_port', 1030)
 		self.add_parameter('session_id', 'SESSION1')
@@ -66,6 +66,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('height', 0)
 		self.add_parameter('insole_size', 'S6 (42-43)')
 		self.add_parameter('combined_acquisition', True)
+		self.add_parameter('use_ar_markers_in_ik', True)
 
 		# references to used behaviors
 		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
@@ -117,7 +118,7 @@ class Acquire_EverythingSM(Behavior):
 		model_name = f"gait1992_{str(self.height*100)}"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}.so"
-		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"SHOW_VIZ_OTHER":"true","USE_AR":"true","COMBINED_ACQUISITION":self.combined_acquisition}
+		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"SHOW_VIZ_OTHER":"true","USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
 		combined_perspective_file = "/catkin_ws/src/ros_biomech/acquisition_state_machines/rqt_acquisition/Control_Acquisition_small_tabs.perspective"
 		# x:1421 y:812, x:162 y:458
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
@@ -130,8 +131,9 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.use_vicon_controller = self.run_vicon_controller
 		_state_machine.userdata.parked_nodes = ["/ik"]
 		_state_machine.userdata.export_vars = export_vars
-		_state_machine.userdata.should_load_ar = {}
+		_state_machine.userdata.should_load_ar = self.use_ar_markers_in_ik
 		_state_machine.userdata.use_combined_acquisition = self.combined_acquisition
+		_state_machine.userdata.vicon_vars = vicon_vars
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -265,12 +267,13 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition'], output_keys=['node_start_list'])
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars'], output_keys=['node_start_list'])
 
 		with _sm_node_startup_2:
 			# x:177 y:32
 			OperatableStateMachine.add('ar_brio',
-										self.use_behavior(ar_brioSM, 'Node_Startup/ar_brio'),
+										self.use_behavior(ar_brioSM, 'Node_Startup/ar_brio',
+											parameters={'load_ar_nodes': self.use_ar_markers_in_ik}),
 										transitions={'finished': 'Acquisition_Setup', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'should_load_ar': 'should_load_ar'})
@@ -308,7 +311,7 @@ class Acquire_EverythingSM(Behavior):
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_yaml, append_node=["/vicon_control"]),
 										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'load_env': 'export_vars'})
+										remapping={'node_start_list': 'node_start_list', 'load_env': 'vicon_vars'})
 
 			# x:300 y:448
 			OperatableStateMachine.add('Run_ID',
@@ -382,7 +385,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_node_startup_2,
 										transitions={'failed': 'failed', 'ok': 'Check_If_Devices_Are_On'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
-										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition'})
+										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars'})
 
 			# x:788 y:614
 			OperatableStateMachine.add('Calibration_Complete',
@@ -400,7 +403,7 @@ class Acquire_EverythingSM(Behavior):
 			OperatableStateMachine.add('Get_Ready_For_Calibration',
 										PlaySoundState(sound_file="/srv/host_data/calib.wav", retries=5),
 										transitions={'continue': 'Calibrate_IK', 'failed': 'Calibrate_IK'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Full})
 
 			# x:650 y:161
 			OperatableStateMachine.add('Imu_Startup_Sequence',
@@ -431,7 +434,7 @@ class Acquire_EverythingSM(Behavior):
 
 			# x:586 y:690
 			OperatableStateMachine.add('Sets_Filename_And_Path_From_Rqt_Acquistion_Params',
-										VariableMultiSetNameAndPathFromParamState(prefix="", suffix="/set_name_and_path", filename_param="rqt_acquisition/activity_name", dirname_param="rqt_acquisition/save_path"),
+										VariableMultiSetNameAndPathFromParamState(prefix="", suffix="/set_name_and_path", filename_param="rqt_acquisition/activity_name", dirname_param="rqt_acquisition/save_path", description_param="rqt_acquisition/description_text"),
 										transitions={'done': 'Start_Recording_Question_Mark', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'node_start_list'})

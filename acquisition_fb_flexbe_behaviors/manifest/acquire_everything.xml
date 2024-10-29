@@ -34,7 +34,7 @@
 
 		<param type="text" name="remove_path" default="/srv/host_data" label="remove_path" hint="Sets the prefix to be removed from the save path" />
 
-		<param type="text" name="append_path" default="d:/ViconData/Ruoli/Motion_Insole" label="append_path" hint="Sets the append_path" />
+		<param type="text" name="append_path" default="d:/ViconData" label="append_path" hint="Sets the append_path" />
 
 		<param type="text" name="vicon_ip" default="192.168.1.103" label="vicon_ip" hint="Sets the vicon_ip" />
 
@@ -66,6 +66,8 @@
 		</param>
 
 		<param type="boolean" name="combined_acquisition" default="True" label="combined_acquisition" hint="Sets the combined_acquisition" />
+
+		<param type="boolean" name="use_ar_markers_in_ik" default="True" label="use_ar_markers_in_ik" hint="Sets the use_ar_markers_in_ik" />
 
 	</params>
 

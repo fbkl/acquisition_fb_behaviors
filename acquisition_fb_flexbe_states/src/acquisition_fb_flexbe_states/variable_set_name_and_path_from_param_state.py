@@ -26,7 +26,7 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
 
     '''
 
-    def __init__(self, prefix, suffix, filename_param, dirname_param):
+    def __init__(self, prefix, suffix, filename_param, dirname_param, description_param=""):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
         super(VariableMultiSetNameAndPathFromParamState, self).__init__(outcomes = ['done', 'failed'],
                                                         input_keys = ['multi_service_list'],)
@@ -34,6 +34,7 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
 
         self._filename_param = filename_param
         self._dirname_param = dirname_param
+        self._description_param = description_param
         self._multi_service_list = []
         self._prefix = prefix
         self._predicate = suffix
@@ -42,6 +43,7 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
         self._old_counter = None
         self._acquisition_update = rospy.ServiceProxy("/rqt_acquisition/update_widgets", Empty)
 
+        self._responses = ""
 
     def execute(self, userdata):
         # This method is called periodically while the state is active.
@@ -79,6 +81,18 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
         _file_name = rospy.get_param(self._filename_param)
         _save_dir = rospy.get_param(self._dirname_param)
         
+        Logger.logwarn(f"self._description_param {self._description_param}")
+        if self._description_param:
+            if rospy.has_param(self._description_param):
+                Logger.logwarn("I have the param!")
+            _description = rospy.get_param(self._description_param)
+            Logger.logwarn(f"_description {_description}")
+        else:
+            _description = ""
+
+
+
+
         match = re.match(r"([a-z]+)([0-9]+)", _file_name, re.I)
         if match:
             Logger.loghint("found a trial counter, will try to add 1 to the next if possible")
@@ -91,6 +105,7 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
         req = SetFileNameSrvRequest()
         req.name = _file_name
         req.path = _save_dir
+        req.description = _description
         Logger.log("My Savefile and Path request msg: "+str(req),Logger.REPORT_HINT )
         _, self._responses = self._multi_service_plex(req)
 
