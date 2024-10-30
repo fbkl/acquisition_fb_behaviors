@@ -5,6 +5,7 @@ from flexbe_core import EventState, Logger
 from diagnostic_msgs.msg import DiagnosticStatus,DiagnosticArray
 import traceback
 from collections import deque
+from multiprocessing import Lock
 
 class WaitForDiags(EventState):
     '''
@@ -30,6 +31,30 @@ class WaitForDiags(EventState):
         self._initial_diags_len = len(self._diags_list)
         self._initial_time = None
         self._timeout_time = rospy.Duration(timeout)
+        self.sub =  rospy.Subscriber("/diagnostics", DiagnosticArray, callback=self.callback)
+        self.my_lock = Lock()
+        with self.my_lock:
+            self.running = False
+
+    def callback(self,a_response):
+        with self.my_lock:
+            if not self.running:
+                return
+        try:
+
+            for a_diag in self._diags_list:
+                #Logger.loghint(f"Looking for diags from {a_diag}")
+                if self.remove_from_diags_list_if_matches(a_response,a_diag):
+                    break
+
+        except Exception as e:
+            return 'continue'
+            #st = traceback.format_stack()
+            
+            traceback.print_exc()
+            #Logger.logerr("I failed while waiting for diags: {}\n{}".format(str(e),str(st)))
+            return 'failed'
+
 
     def remove_from_diags_list_if_matches(self, a_response, a_diag):
         for status in a_response.status:
@@ -49,21 +74,6 @@ class WaitForDiags(EventState):
             Logger.logerr(f"Did not receive all the diagnostic_msgs:\n{self._diags_list}\nin the time prescribed. Timeout exceeded")
             return 'failed'
         
-        try:
-            a_response = rospy.wait_for_message("/diagnostics", DiagnosticArray, timeout=self._timeout_time.to_sec()/self._initial_diags_len)
-
-            for a_diag in self._diags_list:
-                #Logger.loghint(f"Looking for diags from {a_diag}")
-                if self.remove_from_diags_list_if_matches(a_response,a_diag):
-                    break
-
-        except Exception as e:
-            return 'continue'
-            #st = traceback.format_stack()
-            
-            traceback.print_exc()
-            #Logger.logerr("I failed while waiting for diags: {}\n{}".format(str(e),str(st)))
-            return 'failed'
 
     def on_enter(self, userdata):
         # This method is called when the state becomes active, i.e. a transition from another state to this one is taken.
@@ -71,6 +81,9 @@ class WaitForDiags(EventState):
         #return 'continue'
         self._initial_time = rospy.Time.now()
         Logger.loghint(f"looking for DiagnosticStatus from: \n{self._diags_list}")
+
+        with self.my_lock:
+            self.running = True
 
     def on_exit(self, userdata):
         # This method is called when an outcome is returned and another state gets active.
