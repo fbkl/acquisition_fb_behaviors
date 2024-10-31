@@ -26,6 +26,7 @@ from flexbe_states.log_state import LogState
 from flexbe_states.operator_decision_state import OperatorDecisionState
 # Additional imports can be added inside the following tags
 # [MANUAL_IMPORT]
+import rospkg
 
 # [/MANUAL_IMPORT]
 
@@ -75,6 +76,7 @@ class Acquire_EverythingSM(Behavior):
 		# Additional initialization code can be added inside the following tags
 		# [MANUAL_INIT]
 		
+		self.rospack = rospkg.RosPack()
 		# [/MANUAL_INIT]
 
 		# Behavior comments:
@@ -477,4 +479,6 @@ class Acquire_EverythingSM(Behavior):
 	# Private functions can be added inside the following tags
 	# [MANUAL_FUNC]
 	
+	def find_pkg(self, pkg):
+		return self.rospack.get_path(pkg)
 	# [/MANUAL_FUNC]
