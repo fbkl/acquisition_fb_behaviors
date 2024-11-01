@@ -25,7 +25,7 @@ class MoticonInsoleSetterUserDataState(EventState):
         '''
         Constructor
         '''
-        super(MoticonInsoleSetterUserDataState, self).__init__(input_keys=["insole_model","insole_vars"], output_keys=["insole_vars"], outcomes=["done"])
+        super(MoticonInsoleSetterUserDataState, self).__init__(input_keys=["insole_model","insole_vars"], output_keys=["insole_vars","insole_length"], outcomes=["done"])
 
         self._return_code = None
 
@@ -89,6 +89,7 @@ class MoticonInsoleSetterUserDataState(EventState):
                 foot_length_mm = 317.5
 
           userdata.insole_vars.update(  {"FOOT_WIDTH": foot_width_mm/1000., "FOOT_LENGTH": foot_length_mm/1000., "GRF_ORIGIN_Z_OFFSET":grf_origin_z_offset })
+          userdata.insole_length = foot_length_mm/1000
           Logger.logdebug(f"[insole_vars_userdata_setter] insole_vars:  {userdata.insole_vars}")
           self._return_code = 'done'
         except:

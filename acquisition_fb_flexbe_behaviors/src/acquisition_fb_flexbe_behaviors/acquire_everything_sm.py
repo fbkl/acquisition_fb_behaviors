@@ -13,6 +13,7 @@ from acquisition_fb_flexbe_behaviors.imu_startup_sequence_sm import imu_startup_
 from acquisition_fb_flexbe_states.VENVtmux_setup_from_yaml_state import VENVTmuxSetupFromYamlState
 from acquisition_fb_flexbe_states.check_if_alive import HostAliveState
 from acquisition_fb_flexbe_states.env_vars_userdata_setter import MomentArmAndLibraryEnvSetterUserDataState
+from acquisition_fb_flexbe_states.moticon_insole_vars_userdata_setter import MoticonInsoleSetterUserDataState
 from acquisition_fb_flexbe_states.multi_service_call_state import MultiServiceCallState
 from acquisition_fb_flexbe_states.multi_set_some_param_state import MultiSetSomeParamState
 from acquisition_fb_flexbe_states.play_sound_state import PlaySoundState
@@ -24,6 +25,7 @@ from acquisition_fb_flexbe_states.wait_for_messages import WaitForMessages
 from flexbe_states.check_condition_state import CheckConditionState
 from flexbe_states.log_state import LogState
 from flexbe_states.operator_decision_state import OperatorDecisionState
+from gait1992_fb_flexbe_behaviors.urdf_simple_scaling_sm import urdf_simple_scalingSM
 # Additional imports can be added inside the following tags
 # [MANUAL_IMPORT]
 import rospkg
@@ -63,8 +65,8 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('session_id', 'SESSION1')
 		self.add_parameter('activity_name', 'test1')
 		self.add_parameter('subject_id', 'SUB01')
-		self.add_parameter('weight', 0)
-		self.add_parameter('height', 0)
+		self.add_parameter('weight', 70)
+		self.add_parameter('height', 1.75)
 		self.add_parameter('insole_size', 'S6 (42-43)')
 		self.add_parameter('combined_acquisition', True)
 		self.add_parameter('use_ar_markers_in_ik', True)
@@ -72,6 +74,7 @@ class Acquire_EverythingSM(Behavior):
 		# references to used behaviors
 		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
 		self.add_behavior(ar_brioSM, 'Node_Startup/ar_brio')
+		self.add_behavior(urdf_simple_scalingSM, 'Node_Startup/urdf_simple_scaling')
 
 		# Additional initialization code can be added inside the following tags
 		# [MANUAL_INIT]
@@ -136,6 +139,8 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.should_load_ar = self.use_ar_markers_in_ik
 		_state_machine.userdata.use_combined_acquisition = self.combined_acquisition
 		_state_machine.userdata.vicon_vars = vicon_vars
+		_state_machine.userdata.insole_vars = {}
+		_state_machine.userdata.insole_model = self.insole_size
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -269,37 +274,36 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars'], output_keys=['node_start_list'])
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'insole_model', 'insole_vars'], output_keys=['node_start_list', 'insole_vars'])
 
 		with _sm_node_startup_2:
-			# x:177 y:32
-			OperatableStateMachine.add('ar_brio',
-										self.use_behavior(ar_brioSM, 'Node_Startup/ar_brio',
-											parameters={'load_ar_nodes': self.use_ar_markers_in_ik}),
-										transitions={'finished': 'Acquisition_Setup', 'failed': 'failed'},
-										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'should_load_ar': 'should_load_ar'})
+			# x:35 y:174
+			OperatableStateMachine.add('Set_Moticon_Insole_Size',
+										MoticonInsoleSetterUserDataState(),
+										transitions={'done': 'ar_brio'},
+										autonomy={'done': Autonomy.Off},
+										remapping={'insole_model': 'insole_model', 'insole_vars': 'insole_vars', 'insole_length': 'insole_length'})
 
-			# x:491 y:554
+			# x:479 y:621
 			OperatableStateMachine.add('Load_ID_Nodes',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+id_yaml, append_node=["/id_node"]),
 										transitions={'continue': 'Run_SO', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'load_env': 'export_vars'})
 
-			# x:488 y:203
+			# x:487 y:286
 			OperatableStateMachine.add('Load_IK_nodes',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+ik_yaml, append_node=["/ik"]),
 										transitions={'continue': 'Run_Insole', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'load_env': 'export_vars'})
 
-			# x:476 y:274
+			# x:478 y:349
 			OperatableStateMachine.add('Load_Insole_Nodes',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+insole_yaml, append_node=["/moticon_insoles"]),
 										transitions={'continue': 'Turn_On_Insoles', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'load_env': 'export_vars'})
+										remapping={'node_start_list': 'node_start_list', 'load_env': 'insole_vars'})
 
 			# x:359 y:725
 			OperatableStateMachine.add('Load_SO_Nodes',
@@ -311,25 +315,25 @@ class Acquire_EverythingSM(Behavior):
 			# x:481 y:125
 			OperatableStateMachine.add('Load_Vicon_Controller_Node',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_yaml, append_node=["/vicon_control"]),
-										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
+										transitions={'continue': 'urdf_simple_scaling', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'load_env': 'vicon_vars'})
 
-			# x:300 y:448
+			# x:284 y:519
 			OperatableStateMachine.add('Run_ID',
 										CheckConditionState(predicate=lambda x: bool(x)),
 										transitions={'true': 'Load_ID_Nodes', 'false': 'ok'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_id'})
 
-			# x:293 y:262
+			# x:286 y:347
 			OperatableStateMachine.add('Run_Insole',
 										CheckConditionState(predicate=lambda x: bool(x)),
 										transitions={'true': 'Load_Insole_Nodes', 'false': 'ok'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_insoles'})
 
-			# x:306 y:549
+			# x:286 y:608
 			OperatableStateMachine.add('Run_SO',
 										CheckConditionState(predicate=lambda x: bool(x)),
 										transitions={'true': 'Load_SO_Nodes', 'false': 'ok'},
@@ -339,21 +343,37 @@ class Acquire_EverythingSM(Behavior):
 			# x:266 y:152
 			OperatableStateMachine.add('Run_Vicon_Controller',
 										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'Load_IK_nodes'},
+										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'urdf_simple_scaling'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_controller'})
 
-			# x:504 y:352
+			# x:518 y:433
 			OperatableStateMachine.add('Turn_On_Insoles',
 										LogState(text="Turn on Tablet and insoles and put shoes on", severity=Logger.REPORT_HINT),
 										transitions={'done': 'Turn_On_Insoles_Now'},
 										autonomy={'done': Autonomy.Full})
 
-			# x:515 y:449
+			# x:503 y:535
 			OperatableStateMachine.add('Turn_On_Insoles_Now',
 										WaitForMessages(topics_list=["/left/insole","/right/insole"], custom_message="Please start acquiring insoles now.", timeout=40),
 										transitions={'continue': 'Run_ID', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:177 y:32
+			OperatableStateMachine.add('ar_brio',
+										self.use_behavior(ar_brioSM, 'Node_Startup/ar_brio',
+											parameters={'load_ar_nodes': self.use_ar_markers_in_ik}),
+										transitions={'finished': 'Acquisition_Setup', 'failed': 'failed'},
+										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
+										remapping={'should_load_ar': 'should_load_ar'})
+
+			# x:516 y:201
+			OperatableStateMachine.add('urdf_simple_scaling',
+										self.use_behavior(urdf_simple_scalingSM, 'Node_Startup/urdf_simple_scaling',
+											parameters={'model_flexbe_package': "gait1992_fb_flexbe_behaviors", 'height': self.height, 'tf_prefix': "ik", 'ignore_insole_imu_for_vis': True, 'use_gui': False, 'adjustable_tfs': False, 'insole_length': 0.000}),
+										transitions={'finished': 'Load_IK_nodes', 'failed': 'failed'},
+										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
+										remapping={'insole_length': 'insole_length'})
 
 			# x:530 y:23
 			OperatableStateMachine.add('Acquisition_Setup',
@@ -387,7 +407,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_node_startup_2,
 										transitions={'failed': 'failed', 'ok': 'Check_If_Devices_Are_On'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
-										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars'})
+										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'insole_model': 'insole_model', 'insole_vars': 'insole_vars'})
 
 			# x:788 y:614
 			OperatableStateMachine.add('Calibration_Complete',
