@@ -3,11 +3,11 @@
 <behavior name="test_wait_for_message">
 
 	<executable package_path="test_acquisition_fb_flexbe_behaviors.test_wait_for_message_sm" class="test_wait_for_messageSM" />
-	<tagstring></tagstring>
+	<tagstring>test</tagstring>
 	<author>fbk</author>
 	<date>Thu Oct 24 2024</date>
 	<description>
-		.
+		tests wait for message functionality
 	</description>
 
 

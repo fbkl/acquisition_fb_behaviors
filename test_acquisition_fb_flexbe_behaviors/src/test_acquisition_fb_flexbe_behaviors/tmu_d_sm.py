@@ -17,11 +17,11 @@ from acquisition_fb_flexbe_states.tmux_setup_state import TmuxSetupState
 
 '''
 Created on Wed Apr 24 2024
-@author: d
+@author: frekle
 '''
 class tmu_dSM(Behavior):
 	'''
-	d
+	simple tmux test with a startup dictionary
 	'''
 
 

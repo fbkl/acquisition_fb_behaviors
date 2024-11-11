@@ -17,11 +17,11 @@ from acquisition_fb_flexbe_states.play_sound_state import PlaySoundState
 
 '''
 Created on Tue Aug 13 2024
-@author: .
+@author: frekle
 '''
 class test_play_soundSM(Behavior):
 	'''
-	.
+	tests play sound functionality using aplay and subprocess
 	'''
 
 
@@ -56,7 +56,7 @@ class test_play_soundSM(Behavior):
 		with _state_machine:
 			# x:283 y:148
 			OperatableStateMachine.add('test_play',
-										PlaySoundState(sound_file=sound_file),
+										PlaySoundState(sound_file=sound_file, retries=5),
 										transitions={'continue': 'finished', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 

@@ -21,7 +21,9 @@ Created on Fri Aug 23 2024
 '''
 class test_tf_stateSM(Behavior):
 	'''
-	.
+	tests if you can read a tf. 
+
+requires you to publish a tf from terminal
 	'''
 
 
@@ -55,7 +57,7 @@ class test_tf_stateSM(Behavior):
 		with _state_machine:
 			# x:160 y:53
 			OperatableStateMachine.add('tes_tf',
-										WaitForTfsState(tf_list=["carrier_case","hisp"], reference_frame="map"),
+										WaitForTfsState(tf_prefix="", tf_list=["carrier_case","hisp"], reference_frame="map"),
 										transitions={'continue': 'finished', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 

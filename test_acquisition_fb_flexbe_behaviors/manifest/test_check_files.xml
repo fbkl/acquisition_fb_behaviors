@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="test_check_files">
+
+	<executable package_path="test_acquisition_fb_flexbe_behaviors.test_check_files_sm" class="test_check_filesSM" />
+	<tagstring>test</tagstring>
+	<author>frekle</author>
+	<date>Sat Nov 09 2024</date>
+	<description>
+		test checking for files functionality
+	</description>
+
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>

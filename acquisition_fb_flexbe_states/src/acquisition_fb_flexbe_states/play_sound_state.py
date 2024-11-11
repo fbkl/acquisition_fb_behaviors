@@ -54,7 +54,7 @@ class PlaySoundState(EventState):
                     Logger.logerr("Maximum number of retries reached.");
                     Logger.loginfo(output)
                     Logger.logerr(err)
-                return 'failed'
+                    return 'failed'
         #print(self.order)
         #self.order.append("execute")
 

@@ -2,6 +2,8 @@
 
 from flexbe_core import EventState, Logger
 import traceback
+import os
+
 '''
 Created on 14-Feb-2018
 
@@ -26,7 +28,7 @@ class MomentArmAndLibraryEnvSetterUserDataState(EventState):
         '''
         Constructor
         '''
-        super(MomentArmAndLibraryEnvSetterUserDataState, self).__init__(input_keys=["model","lib","should_load_ar","env_vars"], output_keys=["env_vars"], outcomes=["done"])
+        super(MomentArmAndLibraryEnvSetterUserDataState, self).__init__(input_keys=["model","lib","should_load_ar","env_vars","common_vars"], output_keys=["env_vars"], outcomes=["done"])
 
         self._return_code = None
 
@@ -42,7 +44,20 @@ class MomentArmAndLibraryEnvSetterUserDataState(EventState):
         try:
 
           # Add the user data
-          userdata.env_vars.update(  {"MODEL_FILE": userdata.model, "MOMENT_ARM_LIB": userdata.lib, "USE_AR": userdata.should_load_ar})
+          userdata.env_vars.update(userdata.common_vars)
+          lib_file = ""
+          lib_base_file, lib_ext =  os.path.splitext(userdata.lib)
+          if lib_ext == '.so':
+              lib_file =  lib_base_file
+          elif lib_ext == '':
+              lib_file = lib_base_file
+              Logger.logwarn("For most cases I am expecting an .so ending, is this a correct file?")
+          else:
+              Logger.logerr(f"You gave me a file with a strange extension, are you sure the name is correct?\n{userdata.lib}")
+          
+          assert(userdata.model)
+          assert(lib_file)
+          userdata.env_vars.update(  {"MODEL_FILE": userdata.model, "MOMENT_ARM_LIB": lib_file, "USE_AR": userdata.should_load_ar})
           Logger.logdebug(f"[env_vars_userdata_setter] env_vars:  {userdata.env_vars}")
           self._return_code = 'done'
         except:

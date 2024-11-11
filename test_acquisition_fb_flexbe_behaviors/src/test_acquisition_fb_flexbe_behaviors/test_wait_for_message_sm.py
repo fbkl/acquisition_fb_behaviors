@@ -21,7 +21,7 @@ Created on Thu Oct 24 2024
 '''
 class test_wait_for_messageSM(Behavior):
 	'''
-	.
+	tests wait for message functionality
 	'''
 
 
@@ -55,7 +55,7 @@ class test_wait_for_messageSM(Behavior):
 		with _state_machine:
 			# x:411 y:205
 			OperatableStateMachine.add('test_wait',
-										WaitForMessages(topics_list=["test"], timeout=10),
+										WaitForMessages(topics_list=["test"], custom_message="", timeout=10),
 										transitions={'continue': 'finished', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 

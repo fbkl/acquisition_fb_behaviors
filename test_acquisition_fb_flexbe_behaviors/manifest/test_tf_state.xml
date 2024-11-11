@@ -3,11 +3,13 @@
 <behavior name="test_tf_state">
 
 	<executable package_path="test_acquisition_fb_flexbe_behaviors.test_tf_state_sm" class="test_tf_stateSM" />
-	<tagstring>.</tagstring>
+	<tagstring>test</tagstring>
 	<author>frekle</author>
 	<date>Fri Aug 23 2024</date>
 	<description>
-		.
+		tests if you can read a tf. 
+
+requires you to publish a tf from terminal
 	</description>
 
 

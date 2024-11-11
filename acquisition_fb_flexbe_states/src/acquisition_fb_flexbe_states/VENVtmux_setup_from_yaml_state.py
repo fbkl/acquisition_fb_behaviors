@@ -18,11 +18,11 @@ class VENVTmuxSetupFromYamlState(EventState):
 
     '''
 
-    def __init__(self, session_name, startup_yaml,append_node=[]):
+    def __init__(self, session_name, startup_yaml,append_node=[],append_save_files=[]):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
         super(VENVTmuxSetupFromYamlState, self).__init__(outcomes = ['continue', 'failed'],
-                input_keys = ["node_start_list", 'load_env'],
-                output_keys = ["node_start_list"])
+                input_keys = ["node_start_list","save_file_list", 'load_env'],
+                output_keys = ["node_start_list","save_file_list"])
 
 
         # Store state parameter for later use.
@@ -40,7 +40,7 @@ class VENVTmuxSetupFromYamlState(EventState):
                 self._startup_dic = (yaml.safe_load(stream))
             except yaml.YAMLError as exc:
                 self._errors.append(exc)
-                Logger.logerr(exc)
+                Logger.logerr(repr(exc))
                 #print(exc)
 
         self._startup_file = startup_yaml

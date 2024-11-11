@@ -26,7 +26,7 @@ class TmuxSetupState(EventState):
         self._tmux_manager = TmuxManager(self._session_name)
         ## TODO: this only works if you have a single session
         Logger.loghint("__init before getting Session")
-        self._tmux_manager.session = self._tmux_manager.srv.sessions.get()
+        self._tmux_manager.session = self._tmux_manager.srv.sessions.get(session_name=self._session_name)
     def execute(self, userdata):
         return 'continue' # One of the outcomes declared above.
 

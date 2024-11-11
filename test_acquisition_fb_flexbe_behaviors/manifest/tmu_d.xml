@@ -3,11 +3,11 @@
 <behavior name="tmu_d">
 
 	<executable package_path="test_acquisition_fb_flexbe_behaviors.tmu_d_sm" class="tmu_dSM" />
-	<tagstring></tagstring>
-	<author>d</author>
+	<tagstring>test</tagstring>
+	<author>frekle</author>
 	<date>Wed Apr 24 2024</date>
 	<description>
-		d
+		simple tmux test with a startup dictionary
 	</description>
 
 

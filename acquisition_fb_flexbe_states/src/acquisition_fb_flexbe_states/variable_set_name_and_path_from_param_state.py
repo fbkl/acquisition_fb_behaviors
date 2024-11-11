@@ -40,7 +40,7 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
         self._predicate = suffix
         self._activity = ""
         self._multi_service_plex = None
-        self._old_counter = None
+        self._old_counter = 0
         self._acquisition_update = rospy.ServiceProxy("/rqt_acquisition/update_widgets", Empty)
 
         self._responses = ""
@@ -63,6 +63,13 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
 
 
     def on_enter(self, userdata):
+        # we update the counter of the activity 
+        self._old_counter += 1
+        rospy.set_param(self._filename_param, f"{self._activity}{self._old_counter}" )
+        try:
+            self._acquisition_update()
+        except:
+            Logger.logerr("count call rqt_acquisition/update_widgets service")
 
         if type(userdata.multi_service_list) == type(""):
             userdata.multi_service_list = [userdata.multi_service_list]
@@ -114,15 +121,7 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
         # This method is called when an outcome is returned and another state gets active.
         # It can be used to stop possibly running processes started by on_enter.
 
-        # we update the counter of the activity 
-        counter = ""
-        if self._old_counter:
-            counter = str(self._old_counter+1)
-        rospy.set_param(self._filename_param, f"{self._activity}{counter}" )
-        try:
-            self._acquisition_update()
-        except:
-            Logger.logerr("count call rqt_acquisition/update_widgets service")
+        pass
 
     def on_start(self):
         # This method is called when the behavior is started.

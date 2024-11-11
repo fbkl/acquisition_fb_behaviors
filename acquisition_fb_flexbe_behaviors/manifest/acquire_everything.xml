@@ -18,9 +18,9 @@
 
 
 	<!-- Contained Behaviors -->
+	<contains name="imu_startup_sequence" />
 	<contains name="ar_brio" />
 	<contains name="urdf_simple_scaling" />
-	<contains name="imu_startup_sequence" />
 
 	<!-- Available Parameters -->
 	<params>
@@ -31,7 +31,7 @@
 
 		<param type="boolean" name="run_so" default="False" label="run_so" hint="Sets the run_so" />
 
-		<param type="boolean" name="run_vicon_controller" default="True" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
+		<param type="boolean" name="run_vicon_controller" default="False" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
 
 		<param type="text" name="remove_path" default="/srv/host_data" label="remove_path" hint="Sets the prefix to be removed from the save path" />
 
@@ -68,7 +68,11 @@
 
 		<param type="boolean" name="combined_acquisition" default="True" label="combined_acquisition" hint="Sets the combined_acquisition" />
 
-		<param type="boolean" name="use_ar_markers_in_ik" default="True" label="use_ar_markers_in_ik" hint="Sets the use_ar_markers_in_ik" />
+		<param type="boolean" name="use_ar_markers_in_ik" default="False" label="use_ar_markers_in_ik" hint="Sets the use_ar_markers_in_ik" />
+
+		<param type="boolean" name="show_viz_extensive" default="True" label="show_viz_extensive" hint="Sets the show_viz_extensive" />
+
+		<param type="boolean" name="record_rosbag" default="False" label="record_rosbag" hint="Sets the record_rosbag" />
 
 	</params>
 
