@@ -57,6 +57,8 @@ class VENVTmuxSetupFromYamlState(EventState):
         if not found:
             raise(RuntimeError(f"could not find session '{session_name}'"))
    
+        self._append_files = append_save_files
+
     def execute(self, userdata):
         if self._loading:
             return
@@ -76,7 +78,8 @@ class VENVTmuxSetupFromYamlState(EventState):
         create_some_windows(window_dic=self._startup_dic, some_manager= self._tmux_manager)
         ## I should detect failures, shouldnt I?
         self._loading = False
-
+        userdata.save_file_list.extend(self._append_files)
+        
     def on_exit(self, userdata):
         # This method is called when an outcome is returned and another state gets active.
         # It can be used to stop possibly running processes started by on_enter.
