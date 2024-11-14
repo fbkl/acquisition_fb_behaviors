@@ -22,14 +22,21 @@ class HostAliveState(EventState):
         super(HostAliveState, self).__init__(outcomes = ['continue', 'failed'])
 
         self._hostname = hostname
-        self._waittime = waittime
+        self._target_time = rospy.Duration(waittime)
+        self.found_host = False
+
 
     def execute(self, userdata):
         # This method is called periodically while the state is active.
         # Main purpose is to check state conditions and trigger a corresponding outcome.
         # If no outcome is returned, the state will stay active.
 
-        return 'continue' # One of the outcomes declared above.
+        if os.system("ping -c 1 -W " + str(0.1) + " " +
+                self._hostname + " > /dev/null 2>&1") is 0:
+            self.found_host = True
+            return 'continue'
+        if rospy.Time.now() - self._start_time > self._target_time:
+            return 'failed'
 
 
 
@@ -40,20 +47,9 @@ class HostAliveState(EventState):
         # The following code is just for illustrating how the behavior logger works.
         # Text logged by the behavior logger is sent to the operator and displayed in the GUI.
 
-        hostname = self._hostname
-        waittime = self._waittime
-        #(hostname, waittime=1000):
-        '''Function returns True if host IP returns a ping, else False'''
-        assert isinstance(hostname, str), \
+        assert isinstance(self._hostname, str), \
                 "IP/hostname must be provided as a string."
         #arg i hate this, its vulnerable to code injection.
-
-        if os.system("ping -c 1 -W " + str(waittime) + " " +
-                hostname + " > /dev/null 2>&1") is 0:
-            HOST_UP = True
-        else:
-            HOST_UP = False
-        return HOST_UP
 
 
 
