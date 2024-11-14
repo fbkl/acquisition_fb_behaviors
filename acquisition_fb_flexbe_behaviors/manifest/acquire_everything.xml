@@ -29,9 +29,9 @@
 
 		<param type="boolean" name="run_id" default="True" label="run_id" hint="Sets the run_id" />
 
-		<param type="boolean" name="run_so" default="False" label="run_so" hint="Sets the run_so" />
+		<param type="boolean" name="run_so" default="True" label="run_so" hint="Sets the run_so" />
 
-		<param type="boolean" name="run_vicon_controller" default="False" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
+		<param type="boolean" name="run_vicon_controller" default="True" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
 
 		<param type="text" name="remove_path" default="/srv/host_data" label="remove_path" hint="Sets the prefix to be removed from the save path" />
 
@@ -48,14 +48,14 @@
 
 		<param type="text" name="activity_name" default="test1" label="activity_name" hint="Sets the activity_name" />
 
-		<param type="text" name="subject_id" default="SUB01" label="subject_id" hint="Sets the subject_id" />
+		<param type="text" name="subject_id" default="EXS2" label="subject_id" hint="Sets the subject_id" />
 
 		<param type="numeric" name="weight" default="70" label="weight [kg]" hint="Sets the weight">
 			<min value="0" />
 			<max value="1000" />
 		</param>
 
-		<param type="numeric" name="height" default="1.75" label="height [m]" hint="Sets the height">
+		<param type="numeric" name="height" default="1.70" label="height [m]" hint="Sets the height">
 			<min value="0" />
 			<max value="3" />
 		</param>
@@ -70,9 +70,11 @@
 
 		<param type="boolean" name="use_ar_markers_in_ik" default="False" label="use_ar_markers_in_ik" hint="Sets the use_ar_markers_in_ik" />
 
-		<param type="boolean" name="show_viz_extensive" default="True" label="show_viz_extensive" hint="Sets the show_viz_extensive" />
+		<param type="boolean" name="show_viz_extensive" default="False" label="show_viz_extensive" hint="Sets the show_viz_extensive" />
 
 		<param type="boolean" name="record_rosbag" default="False" label="record_rosbag" hint="Sets the record_rosbag" />
+
+		<param type="boolean" name="dummy_insoles" default="True" label="dummy_insoles" hint="Sets the dummy_insoles" />
 
 	</params>
 
