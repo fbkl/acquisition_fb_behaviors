@@ -40,7 +40,6 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
         self._predicate = suffix
         self._activity = ""
         self._multi_service_plex = None
-        self._old_counter = 0
         self._acquisition_update = rospy.ServiceProxy("/rqt_acquisition/update_widgets", Empty)
 
         self._responses = ""
@@ -64,8 +63,6 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
 
     def on_enter(self, userdata):
         # we update the counter of the activity 
-        self._old_counter += 1
-        rospy.set_param(self._filename_param, f"{self._activity}{self._old_counter}" )
         try:
             self._acquisition_update()
         except:
@@ -96,18 +93,6 @@ class VariableMultiSetNameAndPathFromParamState(EventState):
             Logger.logwarn(f"_description {_description}")
         else:
             _description = ""
-
-
-
-
-        match = re.match(r"([a-z]+)([0-9]+)", _file_name, re.I)
-        if match:
-            Logger.loghint("found a trial counter, will try to add 1 to the next if possible")
-            items = match.groups()
-            if len(items) >= 2:
-                self._activity = "".join(items[:-1])
-                self._old_counter = int(items[-1])
-
 
         req = SetFileNameSrvRequest()
         req.name = _file_name
