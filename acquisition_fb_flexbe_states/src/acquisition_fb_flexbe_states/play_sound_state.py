@@ -11,13 +11,15 @@ class PlaySoundState(EventState):
         Play a sound file using aplay.
 
     -- sound_file 	string 	Sound file to play.
+    -- retries      int     Number of times I will try again before giving up and returning fail
+    -- which_player string  Which player you want to use, like 'aplay' or 'paplay'
 
     <= continue 			Sound file has ended.
     <= failed 				Example for a failure outcome.
 
     '''
 
-    def __init__(self, sound_file, retries=5):
+    def __init__(self, sound_file, retries=5, which_player="paplay"):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
         super(PlaySoundState, self).__init__(outcomes = ['continue', 'failed'])
 
@@ -31,6 +33,7 @@ class PlaySoundState(EventState):
         self._p = None
         self._retries = retries
         self._tries = 0
+        self._player =  which_player
         #self.order = ["init"]
 
 
@@ -60,7 +63,7 @@ class PlaySoundState(EventState):
 
     def do_try(self):
         self._tries+=1
-        self._p = subprocess.Popen(["aplay",self._sound_file], stdin= subprocess.PIPE, stdout= subprocess.PIPE, stderr= subprocess.PIPE)
+        self._p = subprocess.Popen([self._player,self._sound_file], stdin= subprocess.PIPE, stdout= subprocess.PIPE, stderr= subprocess.PIPE)
 
     def on_enter(self, userdata):
         # This method is called when the state becomes active, i.e. a transition from another state to this one is taken.

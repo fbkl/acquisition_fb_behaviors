@@ -20,7 +20,7 @@ class CheckFileSavedState(EventState):
 
     '''
 
-    def __init__(self, filename_param = "rqt_acquisition/activity_name", dirname_param = "rqt_acquisition/save_path", target_time = 5):
+    def __init__(self, filename_param = "rqt_acquisition/activity_name", dirname_param = "rqt_acquisition/save_path", target_time = 10):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
         super(CheckFileSavedState, self).__init__(outcomes = ['continue', 'failed'],
                 input_keys = ['expected_files'])
@@ -59,7 +59,7 @@ class CheckFileSavedState(EventState):
                 found_this_file = False
                 corresponding_file = ""
                 for file_that_exist in files_in_dir:
-                    Logger.loginfo(f"comparing file: {file_that_exist} to file {file} with additional requirement of having {self._file} in its name!")
+                    Logger.logdebug(f"comparing file: {file_that_exist} to file {file} with additional requirement of having {self._file} in its name!")
                     if file in file_that_exist and self._file in file_that_exist:
                         corresponding_file = file_that_exist
                         found_this_file = True
@@ -68,8 +68,8 @@ class CheckFileSavedState(EventState):
                     files_found.update({file:corresponding_file})
                 else:
                     files_missing.append(file)
-            Logger.loginfo(f"files_found: {repr(files_found)}")
             if rospy.Time.now() - self._start_time > self._target_time:
+                Logger.loginfo(f"files_found: {repr(files_found)}")
                 if len(files_found) == 0:
                     self._errors.append("no files found")
                     Logger.logerr("NO FILE FOUND!!!!")

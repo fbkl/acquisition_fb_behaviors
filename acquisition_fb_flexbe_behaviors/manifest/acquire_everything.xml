@@ -44,18 +44,18 @@
 			<max value="70000" />
 		</param>
 
-		<param type="text" name="session_id" default="SESSION1" label="session_id" hint="Sets the session_id" />
+		<param type="text" name="session_id" default="SESSION0" label="session_id" hint="Sets the session_id" />
 
 		<param type="text" name="activity_name" default="test1" label="activity_name" hint="Sets the activity_name" />
 
-		<param type="text" name="subject_id" default="EXS2" label="subject_id" hint="Sets the subject_id" />
+		<param type="text" name="subject_id" default="SUB0" label="subject_id" hint="Sets the subject_id" />
 
-		<param type="numeric" name="weight" default="70" label="weight [kg]" hint="Sets the weight">
+		<param type="numeric" name="weight" default="75" label="weight [kg]" hint="Sets the weight">
 			<min value="0" />
 			<max value="1000" />
 		</param>
 
-		<param type="numeric" name="height" default="1.70" label="height [m]" hint="Sets the height">
+		<param type="numeric" name="height" default="1.75" label="height [m]" hint="Sets the height">
 			<min value="0" />
 			<max value="3" />
 		</param>
