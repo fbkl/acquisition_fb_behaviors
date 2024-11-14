@@ -58,22 +58,23 @@ class Acquire_EverythingSM(Behavior):
 		# parameters of this behavior
 		self.add_parameter('run_insoles', True)
 		self.add_parameter('run_id', True)
-		self.add_parameter('run_so', False)
-		self.add_parameter('run_vicon_controller', False)
+		self.add_parameter('run_so', True)
+		self.add_parameter('run_vicon_controller', True)
 		self.add_parameter('remove_path', '/srv/host_data')
 		self.add_parameter('append_path', 'd:/ViconData')
 		self.add_parameter('vicon_ip', '192.168.1.103')
 		self.add_parameter('vicon_port', 1030)
 		self.add_parameter('session_id', 'SESSION1')
 		self.add_parameter('activity_name', 'test1')
-		self.add_parameter('subject_id', 'SUB01')
+		self.add_parameter('subject_id', 'EXS2')
 		self.add_parameter('weight', 70)
-		self.add_parameter('height', 1.75)
+		self.add_parameter('height', 1.70)
 		self.add_parameter('insole_size', 'S6 (42-43)')
 		self.add_parameter('combined_acquisition', True)
 		self.add_parameter('use_ar_markers_in_ik', False)
-		self.add_parameter('show_viz_extensive', True)
+		self.add_parameter('show_viz_extensive', False)
 		self.add_parameter('record_rosbag', False)
+		self.add_parameter('dummy_insoles', True)
 
 		# references to used behaviors
 		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
@@ -113,11 +114,11 @@ class Acquire_EverythingSM(Behavior):
 
 	def create(self):
 		save_dir = "/srv/host_data/tmp"
-		tmux_yaml_path = "/catkin_ws/src/ros_biomech/acquisition_state_machines/acquisition_of_raw_data/config/"
+		tmux_yaml_path = self.find_pkg("acquisition_of_raw_data")+"/config/"
 		imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
-		insole_yaml = "insoles_only.yaml"
+		insole_yaml = "dummy_insoles.yaml" if self.dummy_insoles else "insoles_only.yaml"
 		id_yaml = "id_only.yaml"
 		so_yaml = "so_only.yaml"
 		vicon_yaml = "vicon_only.yaml"
@@ -128,7 +129,7 @@ class Acquire_EverythingSM(Behavior):
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
 		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
-		combined_perspective_file = "/catkin_ws/src/ros_biomech/acquisition_state_machines/rqt_acquisition/Control_Acquisition_small_tabs.perspective"
+		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
 		# x:1421 y:812, x:162 y:458
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
@@ -194,7 +195,7 @@ class Acquire_EverythingSM(Behavior):
 
 			# x:523 y:600
 			OperatableStateMachine.add('Are_All_The_Files_There',
-										CheckFileSavedState(filename_param="rqt_acquisition/activity_name", dirname_param="rqt_acquisition/save_path"),
+										CheckFileSavedState(filename_param="rqt_acquisition/activity_name", dirname_param="rqt_acquisition/save_path", target_time=5),
 										transitions={'continue': 'done', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'expected_files': 'save_file_list'})
@@ -288,7 +289,7 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'insole_model', 'insole_vars', 'common_vars', 'save_file_list'], output_keys=['node_start_list', 'insole_vars'])
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'insole_model', 'insole_vars', 'common_vars', 'save_file_list'], output_keys=['node_start_list', 'insole_vars', 'save_file_list'])
 
 		with _sm_node_startup_2:
 			# x:35 y:174
@@ -300,14 +301,14 @@ class Acquire_EverythingSM(Behavior):
 
 			# x:479 y:621
 			OperatableStateMachine.add('Load_ID_Nodes',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+id_yaml, append_node=["/id_node"], append_save_files=["tau.sto"]),
+										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+id_yaml, append_node=["/id_node"], append_save_files=["tau.sto","ik.sto"]),
 										transitions={'continue': 'Run_SO', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
 
 			# x:487 y:286
 			OperatableStateMachine.add('Load_IK_nodes',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+ik_yaml, append_node=["/ik"], append_save_files=["_ik_lowerbody"]),
+										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+ik_yaml, append_node=["/ik"], append_save_files=["_ik_lower"]),
 										transitions={'continue': 'Run_Insole', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
