@@ -34,7 +34,7 @@ class imu_startup_sequenceSM(Behavior):
 		self.name = 'imu_startup_sequence'
 
 		# parameters of this behavior
-		self.add_parameter('dummy_imus', False)
+		self.add_parameter('dummy_imus', True)
 		self.add_parameter('wait_to_start', True)
 
 		# references to used behaviors
@@ -100,7 +100,7 @@ class imu_startup_sequenceSM(Behavior):
 
 			# x:438 y:58
 			OperatableStateMachine.add('wait_for_things_to_be_done',
-										WaitState(wait_time=5),
+										WaitState(wait_time=1),
 										transitions={'done': 'imu_diags'},
 										autonomy={'done': Autonomy.Off})
 
@@ -116,15 +116,21 @@ class imu_startup_sequenceSM(Behavior):
 			# x:133 y:64
 			OperatableStateMachine.add('Load_IMU_Nodes',
 										VariableTmuxSetupFromYamlState(session_name=use_session, startup_yaml=tmux_yaml_path+tmux_yaml_file, append_node=[]),
-										transitions={'continue': 'Turn_On_IMUs', 'failed': 'failed'},
+										transitions={'continue': 'Wait_for_Imu_Start_Services', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'disregard', 'load_env': 'imu_export_vars'})
 
-			# x:454 y:90
+			# x:492 y:314
 			OperatableStateMachine.add('Turn_On_IMUs',
 										_sm_turn_on_imus_0,
 										transitions={'done': 'don_imus', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Inherit, 'failed': Autonomy.Inherit})
+
+			# x:344 y:161
+			OperatableStateMachine.add('Wait_for_Imu_Start_Services',
+										WaitState(wait_time=3),
+										transitions={'done': 'Turn_On_IMUs'},
+										autonomy={'done': Autonomy.Off})
 
 			# x:723 y:79
 			OperatableStateMachine.add('don_imus',

@@ -76,6 +76,11 @@
 
 		<param type="boolean" name="dummy_insoles" default="True" label="dummy_insoles" hint="Sets the dummy_insoles" />
 
+		<param type="numeric" name="insole_delay" default="0.140" label="insole_delay [s]" hint="Sets the insole_delay">
+			<min value="0" />
+			<max value="1" />
+		</param>
+
 	</params>
 
 

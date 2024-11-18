@@ -16,7 +16,7 @@
 	<!-- Available Parameters -->
 	<params>
 
-		<param type="boolean" name="dummy_imus" default="False" label="dummy_imus" hint="Sets the dummy_imus" />
+		<param type="boolean" name="dummy_imus" default="True" label="dummy_imus" hint="Sets the dummy_imus" />
 
 		<param type="boolean" name="wait_to_start" default="True" label="wait_to_start" hint="Sets the wait_to_start" />
 

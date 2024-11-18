@@ -74,6 +74,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('show_viz_extensive', False)
 		self.add_parameter('record_rosbag', False)
 		self.add_parameter('dummy_insoles', True)
+		self.add_parameter('insole_delay', 0.140)
 
 		# references to used behaviors
 		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
@@ -400,10 +401,10 @@ class Acquire_EverythingSM(Behavior):
 
 		with _state_machine:
 			# x:85 y:37
-			OperatableStateMachine.add('Set_Param_Weight',
-										SetRosParamState(namespace_prefix="/rqt_acquisition", param_dic={"weight":self.weight}),
+			OperatableStateMachine.add('Set_Params_Weight_And_Delay',
+										SetRosParamState(namespace_prefix="", param_dic={"/rqt_acquisition/weight":self.weight, "/left/insole_republisher/side_delay":self.insole_delay, "/right/insole_republisher/side_delay":self.insole_delay}),
 										transitions={'continue': 'Node_Startup', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Full})
+										autonomy={'continue': Autonomy.High, 'failed': Autonomy.Full})
 
 			# x:844 y:453
 			OperatableStateMachine.add('Calibration_Complete',
