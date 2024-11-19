@@ -404,7 +404,7 @@ class Acquire_EverythingSM(Behavior):
 			OperatableStateMachine.add('Set_Params_Weight_And_Delay',
 										SetRosParamState(namespace_prefix="", param_dic={"/rqt_acquisition/weight":self.weight, "/left/insole_republisher/side_delay":self.insole_delay, "/right/insole_republisher/side_delay":self.insole_delay}),
 										transitions={'continue': 'Node_Startup', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.High, 'failed': Autonomy.Full})
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Full})
 
 			# x:844 y:453
 			OperatableStateMachine.add('Calibration_Complete',
