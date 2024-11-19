@@ -65,14 +65,14 @@ class test_check_filesSM(Behavior):
 
 			# x:478 y:356
 			OperatableStateMachine.add('are_files_there',
-										CheckFileSavedState(filename_param="rqt_acquisition/activity_name", dirname_param="rqt_acquisition/save_path"),
+										CheckFileSavedState(filename_param="rqt_acquisition/activity_name", dirname_param="rqt_acquisition/save_path", target_time=1),
 										transitions={'continue': 'finished', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Full},
+										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Full},
 										remapping={'expected_files': 'expected_files'})
 
 			# x:480 y:150
 			OperatableStateMachine.add('Launches_Some_Tester',
-										TmuxSetupState(session_name=session_name, startup_dic={"test_pane":["touch /tmp/DATE_TIMEwind_surfing89_a.txt"]}),
+										TmuxSetupState(session_name=session_name, startup_dic={"test_pane":["sleep 9 ; touch /tmp/DATE_TIMEwind_surfing89_a.txt"]}),
 										transitions={'continue': 'are_files_there', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Full})
 
