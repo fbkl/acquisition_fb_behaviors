@@ -46,16 +46,16 @@
 
 		<param type="text" name="session_id" default="SESSION0" label="session_id" hint="Sets the session_id" />
 
-		<param type="text" name="activity_name" default="test1" label="activity_name" hint="Sets the activity_name" />
+		<param type="text" name="activity_name" default="walking1" label="activity_name" hint="Sets the activity_name" />
 
-		<param type="text" name="subject_id" default="SUB0" label="subject_id" hint="Sets the subject_id" />
+		<param type="text" name="subject_id" default="EX02RE" label="subject_id" hint="Sets the subject_id" />
 
-		<param type="numeric" name="weight" default="75" label="weight [kg]" hint="Sets the weight">
+		<param type="numeric" name="weight" default="72" label="weight [kg]" hint="Sets the weight">
 			<min value="0" />
 			<max value="1000" />
 		</param>
 
-		<param type="numeric" name="height" default="1.75" label="height [m]" hint="Sets the height">
+		<param type="numeric" name="height" default="1.70" label="height [m]" hint="Sets the height">
 			<min value="0" />
 			<max value="3" />
 		</param>
@@ -74,7 +74,7 @@
 
 		<param type="boolean" name="record_rosbag" default="False" label="record_rosbag" hint="Sets the record_rosbag" />
 
-		<param type="boolean" name="dummy_insoles" default="True" label="dummy_insoles" hint="Sets the dummy_insoles" />
+		<param type="boolean" name="dummy_insoles" default="False" label="dummy_insoles" hint="Sets the dummy_insoles" />
 
 		<param type="numeric" name="insole_delay" default="0.140" label="insole_delay [s]" hint="Sets the insole_delay">
 			<min value="0" />

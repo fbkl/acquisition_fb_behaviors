@@ -64,16 +64,16 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('vicon_ip', '192.168.1.103')
 		self.add_parameter('vicon_port', 1030)
 		self.add_parameter('session_id', 'SESSION0')
-		self.add_parameter('activity_name', 'test1')
-		self.add_parameter('subject_id', 'SUB0')
-		self.add_parameter('weight', 75)
-		self.add_parameter('height', 1.75)
+		self.add_parameter('activity_name', 'walking1')
+		self.add_parameter('subject_id', 'EX02RE')
+		self.add_parameter('weight', 72)
+		self.add_parameter('height', 1.70)
 		self.add_parameter('insole_size', 'S6 (42-43)')
 		self.add_parameter('combined_acquisition', True)
 		self.add_parameter('use_ar_markers_in_ik', False)
 		self.add_parameter('show_viz_extensive', False)
 		self.add_parameter('record_rosbag', False)
-		self.add_parameter('dummy_insoles', True)
+		self.add_parameter('dummy_insoles', False)
 		self.add_parameter('insole_delay', 0.140)
 
 		# references to used behaviors
@@ -115,7 +115,7 @@ class Acquire_EverythingSM(Behavior):
 	def create(self):
 		save_dir = "/srv/host_data/tmp"
 		tmux_yaml_path = self.find_pkg("acquisition_of_raw_data")+"/config/"
-		imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
+		imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","pylon_l","foot_l"]
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
 		insole_yaml = "dummy_insoles.yaml" if self.dummy_insoles else "insoles_only.yaml"
@@ -131,6 +131,7 @@ class Acquire_EverythingSM(Behavior):
 		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
+		imu_yaml_file = "imusAmputeeL.yaml"
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
@@ -149,6 +150,7 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.insole_model = self.insole_size
 		_state_machine.userdata.common_vars = common_vars
 		_state_machine.userdata.save_file_list = []
+		_state_machine.userdata.imu_list = imu_list
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -299,6 +301,12 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'done': Autonomy.Off},
 										remapping={'insole_model': 'insole_model', 'insole_vars': 'insole_vars', 'common_vars': 'common_vars', 'insole_length': 'insole_length'})
 
+			# x:321 y:231
+			OperatableStateMachine.add('IMU_names_setter',
+										SetRosParamState(namespace_prefix="/ik", param_dic={"imu_observation_order":imu_list}),
+										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
 			# x:479 y:621
 			OperatableStateMachine.add('Load_ID_Nodes',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+id_yaml, append_node=["/id_node"], append_save_files=["tau.sto","ik.sto"]),
@@ -386,7 +394,7 @@ class Acquire_EverythingSM(Behavior):
 			OperatableStateMachine.add('urdf_simple_scaling',
 										self.use_behavior(urdf_simple_scalingSM, 'Node_Startup/urdf_simple_scaling',
 											parameters={'model_flexbe_package': "gait1992_fb_flexbe_behaviors", 'height': self.height, 'tf_prefix': "ik", 'ignore_insole_imu_for_vis': True, 'use_gui': False, 'adjustable_tfs': False, 'insole_length': 0.000}),
-										transitions={'finished': 'Load_IK_nodes', 'failed': 'failed'},
+										transitions={'finished': 'IMU_names_setter', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'insole_length': 'insole_length'})
 
@@ -421,7 +429,8 @@ class Acquire_EverythingSM(Behavior):
 			# x:657 y:24
 			OperatableStateMachine.add('Imu_Startup_Sequence',
 										self.use_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence',
-											default_keys=['imu_export_vars']),
+											default_keys=['imu_export_vars'],
+											parameters={'imu_yaml_file': imu_yaml_file}),
 										transitions={'finished': 'Start_Parked_Nodes', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'imu_list': 'imu_list'})

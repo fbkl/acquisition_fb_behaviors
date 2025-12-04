@@ -34,8 +34,9 @@ class imu_startup_sequenceSM(Behavior):
 		self.name = 'imu_startup_sequence'
 
 		# parameters of this behavior
-		self.add_parameter('dummy_imus', True)
+		self.add_parameter('dummy_imus', False)
 		self.add_parameter('wait_to_start', True)
+		self.add_parameter('imu_yaml_file', 'imus2392.yaml')
 
 		# references to used behaviors
 
@@ -68,11 +69,10 @@ class imu_startup_sequenceSM(Behavior):
 
 	def create(self):
 		tmux_yaml_path = "/catkin_ws/src/ros_biomech/acquisition_state_machines/acquisition_of_raw_data/config/"
-		imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
-		tmux_yaml_file = "imus.yaml"
 		use_session = "testtt"
+		imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
 		# x:961 y:87, x:216 y:388
-		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['imu_export_vars'], output_keys=['imu_list'])
+		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['imu_export_vars', 'imu_list'], output_keys=['imu_list'])
 		_state_machine.userdata.imu_list = imu_list
 		_state_machine.userdata.disregard = []
 		_state_machine.userdata.imu_export_vars = {"DUMMY_IMUS":self.dummy_imus,"WAIT_TO_START":self.wait_to_start}
@@ -115,7 +115,7 @@ class imu_startup_sequenceSM(Behavior):
 		with _state_machine:
 			# x:133 y:64
 			OperatableStateMachine.add('Load_IMU_Nodes',
-										VariableTmuxSetupFromYamlState(session_name=use_session, startup_yaml=tmux_yaml_path+tmux_yaml_file, append_node=[]),
+										VariableTmuxSetupFromYamlState(session_name=use_session, startup_yaml=tmux_yaml_path+self.imu_yaml_file, append_node=[]),
 										transitions={'continue': 'Wait_for_Imu_Start_Services', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'disregard', 'load_env': 'imu_export_vars'})
