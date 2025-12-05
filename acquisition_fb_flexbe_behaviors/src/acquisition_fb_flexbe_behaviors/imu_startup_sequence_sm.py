@@ -8,9 +8,9 @@
 ###########################################################
 
 from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyContainer, PriorityContainer, Logger
-from acquisition_fb_flexbe_states.multi_service_call_state import MultiServiceCallState
+from acquisition_fb_flexbe_states.multi_service_userdata_call_state import MultiServiceUserdataCallState
 from acquisition_fb_flexbe_states.variable_tmux_setup_from_yaml_state import VariableTmuxSetupFromYamlState
-from acquisition_fb_flexbe_states.wait_for_diags import WaitForDiags
+from acquisition_fb_flexbe_states.wait_for_diags_userdata import WaitForDiagsUserdata
 from flexbe_states.log_state import LogState
 from flexbe_states.wait_state import WaitState
 # Additional imports can be added inside the following tags
@@ -70,10 +70,9 @@ class imu_startup_sequenceSM(Behavior):
 	def create(self):
 		tmux_yaml_path = "/catkin_ws/src/ros_biomech/acquisition_state_machines/acquisition_of_raw_data/config/"
 		use_session = "testtt"
-		imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
 		# x:961 y:87, x:216 y:388
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['imu_export_vars', 'imu_list'], output_keys=['imu_list'])
-		_state_machine.userdata.imu_list = imu_list
+		_state_machine.userdata.imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
 		_state_machine.userdata.disregard = []
 		_state_machine.userdata.imu_export_vars = {"DUMMY_IMUS":self.dummy_imus,"WAIT_TO_START":self.wait_to_start}
 
@@ -83,32 +82,34 @@ class imu_startup_sequenceSM(Behavior):
 		# [/MANUAL_CREATE]
 
 		# x:949 y:156, x:130 y:477
-		_sm_turn_on_imus_0 = OperatableStateMachine(outcomes=['done', 'failed'])
+		_sm_turn_on_imus_0 = OperatableStateMachine(outcomes=['done', 'failed'], input_keys=['imu_list'])
 
 		with _sm_turn_on_imus_0:
 			# x:30 y:47
 			OperatableStateMachine.add('turn_on_imus',
 										LogState(text="Turn on imus in a line", severity=Logger.REPORT_HINT),
-										transitions={'done': 'start_imus'},
+										transitions={'done': 'start_imus2'},
 										autonomy={'done': Autonomy.Full})
 
-			# x:180 y:56
-			OperatableStateMachine.add('start_imus',
-										MultiServiceCallState(multi_service_list=imu_list, predicate="/start_now", prefix="/ximu_", wait_to_start=True, timeout=60),
+			# x:207 y:58
+			OperatableStateMachine.add('start_imus2',
+										MultiServiceUserdataCallState(predicate="/start_now", prefix="/ximu_", wait_to_start=True, timeout=60),
 										transitions={'done': 'wait_for_things_to_be_done', 'failed': 'failed'},
-										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
+										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
+										remapping={'multi_service_list': 'imu_list'})
 
 			# x:438 y:58
 			OperatableStateMachine.add('wait_for_things_to_be_done',
 										WaitState(wait_time=1),
-										transitions={'done': 'imu_diags'},
+										transitions={'done': 'imu_diags2'},
 										autonomy={'done': Autonomy.Off})
 
-			# x:422 y:187
-			OperatableStateMachine.add('imu_diags',
-										WaitForDiags(diags_list=imu_list, timeout=100),
+			# x:409 y:278
+			OperatableStateMachine.add('imu_diags2',
+										WaitForDiagsUserdata(timeout=100),
 										transitions={'continue': 'done', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
+										remapping={'diags_list': 'imu_list'})
 
 
 
@@ -124,7 +125,8 @@ class imu_startup_sequenceSM(Behavior):
 			OperatableStateMachine.add('Turn_On_IMUs',
 										_sm_turn_on_imus_0,
 										transitions={'done': 'don_imus', 'failed': 'failed'},
-										autonomy={'done': Autonomy.Inherit, 'failed': Autonomy.Inherit})
+										autonomy={'done': Autonomy.Inherit, 'failed': Autonomy.Inherit},
+										remapping={'imu_list': 'imu_list'})
 
 			# x:344 y:161
 			OperatableStateMachine.add('Wait_for_Imu_Start_Services',
