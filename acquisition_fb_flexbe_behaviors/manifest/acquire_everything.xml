@@ -20,7 +20,7 @@
 	<!-- Contained Behaviors -->
 	<contains name="imu_startup_sequence" />
 	<contains name="ar_brio" />
-	<contains name="urdf_simple_scaling" />
+	<contains name="insoles_simple_scaling" />
 
 	<!-- Available Parameters -->
 	<params>
@@ -76,8 +76,8 @@
 
 		<param type="boolean" name="dummy_insoles" default="False" label="dummy_insoles" hint="Sets the dummy_insoles" />
 
-		<param type="numeric" name="insole_delay" default="0.140" label="insole_delay [s]" hint="Sets the insole_delay">
-			<min value="0" />
+		<param type="numeric" name="insole_delay" default="-0.02" label="insole_delay [s]" hint="Sets the insole_delay">
+			<min value="-1" />
 			<max value="1" />
 		</param>
 

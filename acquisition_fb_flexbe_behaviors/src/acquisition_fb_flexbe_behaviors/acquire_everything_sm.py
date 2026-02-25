@@ -26,7 +26,7 @@ from acquisition_fb_flexbe_states.wait_for_messages import WaitForMessages
 from flexbe_states.check_condition_state import CheckConditionState
 from flexbe_states.log_state import LogState
 from flexbe_states.operator_decision_state import OperatorDecisionState
-from gait1992_fb_flexbe_behaviors.urdf_simple_scaling_sm import urdf_simple_scalingSM
+from insoles_fb_flexbe_behaviors.insoles_simple_scaling_sm import insoles_simple_scalingSM
 # Additional imports can be added inside the following tags
 # [MANUAL_IMPORT]
 import rospkg
@@ -74,12 +74,12 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('show_viz_extensive', False)
 		self.add_parameter('record_rosbag', False)
 		self.add_parameter('dummy_insoles', False)
-		self.add_parameter('insole_delay', 0.140)
+		self.add_parameter('insole_delay', -0.02)
 
 		# references to used behaviors
 		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
 		self.add_behavior(ar_brioSM, 'Node_Startup/ar_brio')
-		self.add_behavior(urdf_simple_scalingSM, 'Node_Startup/urdf_simple_scaling')
+		self.add_behavior(insoles_simple_scalingSM, 'Node_Startup/insoles_simple_scaling')
 
 		# Additional initialization code can be added inside the following tags
 		# [MANUAL_INIT]
@@ -132,6 +132,8 @@ class Acquire_EverythingSM(Behavior):
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
 		imu_yaml_file = "imusAmputeeL.yaml"
+		foot_left_name = "foot_l"
+		foot_right_name = "calcn_r"
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
@@ -151,6 +153,8 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.common_vars = common_vars
 		_state_machine.userdata.save_file_list = []
 		_state_machine.userdata.imu_list = imu_list
+		_state_machine.userdata.foot_left_name = foot_left_name
+		_state_machine.userdata.foot_right_name = foot_right_name
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -291,7 +295,7 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'insole_model', 'insole_vars', 'common_vars', 'save_file_list'], output_keys=['node_start_list', 'insole_vars', 'save_file_list'])
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'insole_model', 'insole_vars', 'common_vars', 'save_file_list', 'foot_left_name', 'foot_right_name'], output_keys=['node_start_list', 'insole_vars', 'save_file_list'])
 
 		with _sm_node_startup_2:
 			# x:35 y:174
@@ -301,7 +305,13 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'done': Autonomy.Off},
 										remapping={'insole_model': 'insole_model', 'insole_vars': 'insole_vars', 'common_vars': 'common_vars', 'insole_length': 'insole_length'})
 
-			# x:321 y:231
+			# x:234 y:169
+			OperatableStateMachine.add('GRF_names_setter',
+										SetRosParamState(namespace_prefix="/id_node", param_dic={"grf_right_apply_to_body":foot_right_name, "grf_left_apply_to_body":foot_left_name}),
+										transitions={'continue': 'insoles_simple_scaling', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:237 y:286
 			OperatableStateMachine.add('IMU_names_setter',
 										SetRosParamState(namespace_prefix="/ik", param_dic={"imu_observation_order":imu_list}),
 										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
@@ -338,7 +348,7 @@ class Acquire_EverythingSM(Behavior):
 			# x:481 y:125
 			OperatableStateMachine.add('Load_Vicon_Controller_Node',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_yaml, append_node=["/vicon_control"], append_save_files=[]),
-										transitions={'continue': 'urdf_simple_scaling', 'failed': 'failed'},
+										transitions={'continue': 'GRF_names_setter', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'vicon_vars'})
 
@@ -363,10 +373,10 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_so'})
 
-			# x:266 y:152
+			# x:255 y:100
 			OperatableStateMachine.add('Run_Vicon_Controller',
 										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'urdf_simple_scaling'},
+										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'GRF_names_setter'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_controller'})
 
@@ -390,13 +400,13 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'should_load_ar': 'should_load_ar'})
 
-			# x:516 y:201
-			OperatableStateMachine.add('urdf_simple_scaling',
-										self.use_behavior(urdf_simple_scalingSM, 'Node_Startup/urdf_simple_scaling',
-											parameters={'model_flexbe_package': "gait1992_fb_flexbe_behaviors", 'height': self.height, 'tf_prefix': "ik", 'ignore_insole_imu_for_vis': True, 'use_gui': False, 'adjustable_tfs': False, 'insole_length': 0.000}),
+			# x:477 y:214
+			OperatableStateMachine.add('insoles_simple_scaling',
+										self.use_behavior(insoles_simple_scalingSM, 'Node_Startup/insoles_simple_scaling',
+											parameters={'insole_length': 0.2742}),
 										transitions={'finished': 'IMU_names_setter', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'insole_length': 'insole_length'})
+										remapping={'insole_length': 'insole_length', 'foot_left_name': 'foot_left_name', 'foot_right_name': 'foot_right_name'})
 
 			# x:530 y:23
 			OperatableStateMachine.add('Acquisition_Setup',
@@ -440,7 +450,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_node_startup_2,
 										transitions={'failed': 'failed', 'ok': 'Imu_Startup_Sequence'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
-										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'insole_model': 'insole_model', 'insole_vars': 'insole_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list'})
+										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'insole_model': 'insole_model', 'insole_vars': 'insole_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list', 'foot_left_name': 'foot_left_name', 'foot_right_name': 'foot_right_name'})
 
 			# x:1210 y:601
 			OperatableStateMachine.add('Record_Another',
