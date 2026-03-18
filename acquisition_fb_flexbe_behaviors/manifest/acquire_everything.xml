@@ -25,13 +25,13 @@
 	<!-- Available Parameters -->
 	<params>
 
-		<param type="boolean" name="run_insoles" default="True" label="run_insoles" hint="Sets the run_insoles" />
+		<param type="boolean" name="run_insoles" default="False" label="run_insoles" hint="Sets the run_insoles" />
 
-		<param type="boolean" name="run_id" default="True" label="run_id" hint="Sets the run_id" />
+		<param type="boolean" name="run_id" default="False" label="run_id" hint="Sets the run_id" />
 
-		<param type="boolean" name="run_so" default="True" label="run_so" hint="Sets the run_so" />
+		<param type="boolean" name="run_so" default="False" label="run_so" hint="Sets the run_so" />
 
-		<param type="boolean" name="run_vicon_controller" default="True" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
+		<param type="boolean" name="run_vicon_controller" default="False" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
 
 		<param type="text" name="remove_path" default="/srv/host_data" label="remove_path" hint="Sets the prefix to be removed from the save path" />
 

@@ -55,10 +55,10 @@ class Acquire_EverythingSM(Behavior):
 		self.name = 'Acquire_Everything'
 
 		# parameters of this behavior
-		self.add_parameter('run_insoles', True)
-		self.add_parameter('run_id', True)
-		self.add_parameter('run_so', True)
-		self.add_parameter('run_vicon_controller', True)
+		self.add_parameter('run_insoles', False)
+		self.add_parameter('run_id', False)
+		self.add_parameter('run_so', False)
+		self.add_parameter('run_vicon_controller', False)
 		self.add_parameter('remove_path', '/srv/host_data')
 		self.add_parameter('append_path', 'd:/ViconData')
 		self.add_parameter('vicon_ip', '192.168.1.103')
@@ -115,7 +115,7 @@ class Acquire_EverythingSM(Behavior):
 	def create(self):
 		save_dir = "/srv/host_data/tmp"
 		tmux_yaml_path = self.find_pkg("acquisition_of_raw_data")+"/config/"
-		imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","pylon_l","foot_l"]
+		imu_list = ["thorax","humerus","radius"]
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
 		insole_yaml = "dummy_insoles.yaml" if self.dummy_insoles else "insoles_only.yaml"
@@ -128,12 +128,13 @@ class Acquire_EverythingSM(Behavior):
 		model_name = f"gait1992_{str(int(self.height*100))}"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
-		export_vars = {"MODEL_FILE":model_file,"MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
+		export_vars = {"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
-		imu_yaml_file = "imusAmputeeL.yaml"
+		imu_yaml_file = "imusarm.yaml"
 		foot_left_name = "foot_l"
 		foot_right_name = "calcn_r"
+		name_tag = "upper"
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""

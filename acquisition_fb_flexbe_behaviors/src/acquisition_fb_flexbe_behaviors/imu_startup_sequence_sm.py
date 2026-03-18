@@ -34,9 +34,10 @@ class imu_startup_sequenceSM(Behavior):
 		self.name = 'imu_startup_sequence'
 
 		# parameters of this behavior
-		self.add_parameter('dummy_imus', False)
+		self.add_parameter('dummy_imus', True)
 		self.add_parameter('wait_to_start', True)
 		self.add_parameter('imu_yaml_file', 'imus2392.yaml')
+		self.add_parameter('imu_name_prefix', '/')
 
 		# references to used behaviors
 
@@ -93,7 +94,7 @@ class imu_startup_sequenceSM(Behavior):
 
 			# x:207 y:58
 			OperatableStateMachine.add('start_imus2',
-										MultiServiceUserdataCallState(predicate="/start_now", prefix="/ximu_", wait_to_start=True, timeout=60),
+										MultiServiceUserdataCallState(predicate="/start_now", prefix=self.imu_name_prefix, wait_to_start=True, timeout=60),
 										transitions={'done': 'wait_for_things_to_be_done', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'imu_list'})
