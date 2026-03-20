@@ -55,7 +55,7 @@ class bringup_vioSM(Behavior):
 		with _state_machine:
 			# x:231 y:109
 			OperatableStateMachine.add('past_frederico_is_a_magic_man',
-                                TmuxSetupState(session_name="testtt", startup_dic={"cameras":["roslaunch vio_launch namespaced.launch machine:=rpi5-ubuntu, ", "roslaunch vio_launch namespaced_rovioli.launch machine:=silver camera:=thorax"]}),
+                                TmuxSetupState(session_name="testtt", startup_dic={"cameras":["roslaunch vio_launch namespaced.launch machine:=rpi5-ubuntu", "roslaunch vio_launch namespaced_rovioli.launch machine:=silver camera:=thorax"]}),
 										transitions={'continue': 'finished', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Off})
 
