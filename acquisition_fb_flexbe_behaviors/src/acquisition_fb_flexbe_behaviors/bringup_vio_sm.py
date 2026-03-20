@@ -21,7 +21,7 @@ Created on Thu Mar 19 2026
 '''
 class bringup_vioSM(Behavior):
 	'''
-	trying to get vio running remotely,, 
+	trying to get vio running remotely,,
 	'''
 
 
@@ -55,7 +55,7 @@ class bringup_vioSM(Behavior):
 		with _state_machine:
 			# x:231 y:109
 			OperatableStateMachine.add('past_frederico_is_a_magic_man',
-										TmuxSetupState(session_name="testtt", startup_dic={"camera1":["roslaunch vio_launch namespaced.launch machine:=silver"]}),
+										TmuxSetupState(session_name="testtt", startup_dic={"camera1":["roslaunch vio_launch namespaced.launch machine:=rpi5-ubuntu"]}),
 										transitions={'continue': 'finished', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Off})
 
