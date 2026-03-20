@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<behavior name="bringup_vio">
+
+	<executable package_path="acquisition_fb_flexbe_behaviors.bringup_vio_sm" class="bringup_vioSM" />
+	<tagstring>vio</tagstring>
+	<author>fbk</author>
+	<date>Thu Mar 19 2026</date>
+	<description>
+		trying to get vio running remotely,, 
+	</description>
+
+
+	<!-- Contained Behaviors -->
+
+	<!-- Available Parameters -->
+
+</behavior>
