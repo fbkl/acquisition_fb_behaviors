@@ -57,7 +57,7 @@ class bringup_vioSM(Behavior):
 			OperatableStateMachine.add('past_frederico_is_a_magic_man',
 										TmuxSetupState(session_name="testtt", startup_dic={"camera1":["roslaunch jetpack a_camera.launch cam:=cam1"]}),
 										transitions={'continue': 'finished', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Off})
 
 
 		return _state_machine
