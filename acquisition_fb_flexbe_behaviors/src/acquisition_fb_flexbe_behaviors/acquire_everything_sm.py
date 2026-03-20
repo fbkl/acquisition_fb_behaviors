@@ -131,7 +131,7 @@ class Acquire_EverythingSM(Behavior):
 		export_vars = {"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
-		imu_yaml_file = "imusarm.yaml"
+		imu_yaml_file = "viosarm.yaml"
 		foot_left_name = "foot_l"
 		foot_right_name = "calcn_r"
 		name_tag = "upper"
