@@ -11,6 +11,7 @@ from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyC
 from acquisition_fb_flexbe_states.multi_service_userdata_call_state import MultiServiceUserdataCallState
 from acquisition_fb_flexbe_states.variable_tmux_setup_from_yaml_state import VariableTmuxSetupFromYamlState
 from acquisition_fb_flexbe_states.wait_for_diags_userdata import WaitForDiagsUserdata
+from flexbe_states.check_condition_state import CheckConditionState
 from flexbe_states.log_state import LogState
 from flexbe_states.wait_state import WaitState
 # Additional imports can be added inside the following tags
@@ -35,7 +36,7 @@ class imu_startup_sequenceSM(Behavior):
 
 		# parameters of this behavior
 		self.add_parameter('dummy_imus', True)
-		self.add_parameter('wait_to_start', True)
+		self.add_parameter('wait_to_start', False)
 		self.add_parameter('imu_yaml_file', 'imus2392.yaml')
 		self.add_parameter('imu_name_prefix', '/')
 
@@ -76,41 +77,49 @@ class imu_startup_sequenceSM(Behavior):
 		_state_machine.userdata.imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
 		_state_machine.userdata.disregard = []
 		_state_machine.userdata.imu_export_vars = {"DUMMY_IMUS":self.dummy_imus,"WAIT_TO_START":self.wait_to_start}
+		_state_machine.userdata.checkstart = self.wait_to_start
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
 		
 		# [/MANUAL_CREATE]
 
-		# x:949 y:156, x:130 y:477
-		_sm_turn_on_imus_0 = OperatableStateMachine(outcomes=['done', 'failed'], input_keys=['imu_list'])
+		# x:1021 y:70, x:130 y:477
+		_sm_turn_on_imus_0 = OperatableStateMachine(outcomes=['done', 'failed'], input_keys=['imu_list', 'checkstart'])
 
 		with _sm_turn_on_imus_0:
 			# x:30 y:47
 			OperatableStateMachine.add('turn_on_imus',
 										LogState(text="Turn on imus in a line", severity=Logger.REPORT_HINT),
-										transitions={'done': 'start_imus2'},
+										transitions={'done': 'check_waits'},
 										autonomy={'done': Autonomy.Full})
 
-			# x:207 y:58
+			# x:442 y:258
+			OperatableStateMachine.add('imu_diags2',
+										WaitForDiagsUserdata(timeout=100),
+										transitions={'continue': 'done', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
+										remapping={'diags_list': 'imu_list'})
+
+			# x:437 y:104
 			OperatableStateMachine.add('start_imus2',
 										MultiServiceUserdataCallState(predicate="/start_now", prefix=self.imu_name_prefix, wait_to_start=True, timeout=60),
 										transitions={'done': 'wait_for_things_to_be_done', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'imu_list'})
 
-			# x:438 y:58
+			# x:434 y:176
 			OperatableStateMachine.add('wait_for_things_to_be_done',
 										WaitState(wait_time=1),
 										transitions={'done': 'imu_diags2'},
 										autonomy={'done': Autonomy.Off})
 
-			# x:409 y:278
-			OperatableStateMachine.add('imu_diags2',
-										WaitForDiagsUserdata(timeout=100),
-										transitions={'continue': 'done', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'diags_list': 'imu_list'})
+			# x:372 y:24
+			OperatableStateMachine.add('check_waits',
+										CheckConditionState(predicate=lambda x: x),
+										transitions={'true': 'start_imus2', 'false': 'done'},
+										autonomy={'true': Autonomy.Full, 'false': Autonomy.Full},
+										remapping={'input_value': 'checkstart'})
 
 
 
@@ -122,12 +131,12 @@ class imu_startup_sequenceSM(Behavior):
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'disregard', 'load_env': 'imu_export_vars'})
 
-			# x:492 y:314
+			# x:493 y:314
 			OperatableStateMachine.add('Turn_On_IMUs',
 										_sm_turn_on_imus_0,
 										transitions={'done': 'don_imus', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'imu_list': 'imu_list'})
+										remapping={'imu_list': 'imu_list', 'checkstart': 'checkstart'})
 
 			# x:344 y:161
 			OperatableStateMachine.add('Wait_for_Imu_Start_Services',

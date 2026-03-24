@@ -18,7 +18,7 @@
 
 		<param type="boolean" name="dummy_imus" default="True" label="dummy_imus" hint="Sets the dummy_imus" />
 
-		<param type="boolean" name="wait_to_start" default="True" label="wait_to_start" hint="Sets the wait_to_start" />
+		<param type="boolean" name="wait_to_start" default="False" label="wait_to_start" hint="Sets the wait_to_start" />
 
 		<param type="text" name="imu_yaml_file" default="imus2392.yaml" label="imu_yaml_file" hint="Sets the imu_yaml_file" />
 
