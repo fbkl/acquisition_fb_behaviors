@@ -11,6 +11,7 @@ from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyC
 from acquisition_fb_flexbe_states.multi_service_userdata_call_state import MultiServiceUserdataCallState
 from acquisition_fb_flexbe_states.variable_tmux_setup_from_yaml_state import VariableTmuxSetupFromYamlState
 from acquisition_fb_flexbe_states.wait_for_diags_userdata import WaitForDiagsUserdata
+from flexbe_states.check_condition_state import CheckConditionState
 from flexbe_states.log_state import LogState
 from flexbe_states.wait_state import WaitState
 # Additional imports can be added inside the following tags
@@ -76,6 +77,7 @@ class imu_startup_sequenceSM(Behavior):
 		_state_machine.userdata.imu_list = ["torso","pelvis","femur_r","tibia_r","talus_r","femur_l","tibia_l","talus_l"]
 		_state_machine.userdata.disregard = []
 		_state_machine.userdata.imu_export_vars = {"DUMMY_IMUS":self.dummy_imus,"WAIT_TO_START":self.wait_to_start}
+		_state_machine.userdata.wait_to_start = self.wait_to_start
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -92,20 +94,20 @@ class imu_startup_sequenceSM(Behavior):
 										transitions={'done': 'start_imus2'},
 										autonomy={'done': Autonomy.Full})
 
-			# x:207 y:58
+			# x:332 y:188
 			OperatableStateMachine.add('start_imus2',
 										MultiServiceUserdataCallState(predicate="/start_now", prefix=self.imu_name_prefix, wait_to_start=True, timeout=60),
 										transitions={'done': 'wait_for_things_to_be_done', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'imu_list'})
 
-			# x:438 y:58
+			# x:537 y:61
 			OperatableStateMachine.add('wait_for_things_to_be_done',
 										WaitState(wait_time=1),
 										transitions={'done': 'imu_diags2'},
 										autonomy={'done': Autonomy.Off})
 
-			# x:409 y:278
+			# x:592 y:292
 			OperatableStateMachine.add('imu_diags2',
 										WaitForDiagsUserdata(timeout=100),
 										transitions={'continue': 'done', 'failed': 'failed'},
@@ -118,18 +120,18 @@ class imu_startup_sequenceSM(Behavior):
 			# x:133 y:64
 			OperatableStateMachine.add('Load_IMU_Nodes',
 										VariableTmuxSetupFromYamlState(session_name=use_session, startup_yaml=tmux_yaml_path+self.imu_yaml_file, append_node=[]),
-										transitions={'continue': 'Wait_for_Imu_Start_Services', 'failed': 'failed'},
+										transitions={'continue': 'should_I_stay_or_should_I_go', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'disregard', 'load_env': 'imu_export_vars'})
 
-			# x:492 y:314
+			# x:615 y:373
 			OperatableStateMachine.add('Turn_On_IMUs',
 										_sm_turn_on_imus_0,
 										transitions={'done': 'don_imus', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'imu_list': 'imu_list'})
 
-			# x:344 y:161
+			# x:548 y:243
 			OperatableStateMachine.add('Wait_for_Imu_Start_Services',
 										WaitState(wait_time=3),
 										transitions={'done': 'Turn_On_IMUs'},
@@ -140,6 +142,13 @@ class imu_startup_sequenceSM(Behavior):
 										LogState(text="place IMUs", severity=Logger.REPORT_HINT),
 										transitions={'done': 'finished'},
 										autonomy={'done': Autonomy.Full})
+
+			# x:427 y:62
+			OperatableStateMachine.add('should_I_stay_or_should_I_go',
+										CheckConditionState(predicate=lambda x: return x),
+										transitions={'true': 'Wait_for_Imu_Start_Services', 'false': 'don_imus'},
+										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
+										remapping={'input_value': 'wait_to_start'})
 
 
 		return _state_machine
