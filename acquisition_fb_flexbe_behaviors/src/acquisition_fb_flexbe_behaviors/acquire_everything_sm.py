@@ -115,7 +115,7 @@ class Acquire_EverythingSM(Behavior):
 	def create(self):
 		save_dir = "/srv/host_data/tmp"
 		tmux_yaml_path = self.find_pkg("acquisition_of_raw_data")+"/config/"
-		imu_list = ["thorax","humerus","radius"]
+		imu_list = ["thorax","radius"]
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
 		insole_yaml = "dummy_insoles.yaml" if self.dummy_insoles else "insoles_only.yaml"
@@ -124,8 +124,8 @@ class Acquire_EverythingSM(Behavior):
 		vicon_yaml = "vicon_only.yaml"
 		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port}
 		tmux_session_name = "testtt"
-		model_dir = "/srv/host_data/models/height_adjusted/"
-		model_name = f"gait1992_{str(int(self.height*100))}"
+		model_dir = "/srv/host_data/mobl2016/"
+		model_name = "mobl2016_v03"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
 		export_vars = {"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
