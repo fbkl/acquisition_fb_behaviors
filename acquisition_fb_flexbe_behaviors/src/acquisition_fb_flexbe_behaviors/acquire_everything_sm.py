@@ -128,7 +128,7 @@ class Acquire_EverythingSM(Behavior):
 		model_name = "mobl2016_v03"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
-		export_vars = {"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
+		export_vars = {"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"IMU_LIST":imu_list}
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
 		imu_yaml_file = "vioarm.yaml"
