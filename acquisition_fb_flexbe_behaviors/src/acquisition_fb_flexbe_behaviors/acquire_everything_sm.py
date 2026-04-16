@@ -8,12 +8,10 @@
 ###########################################################
 
 from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyContainer, PriorityContainer, Logger
-from acquisition_fb_flexbe_behaviors.ar_brio_sm import ar_brioSM
 from acquisition_fb_flexbe_behaviors.imu_startup_sequence_sm import imu_startup_sequenceSM
 from acquisition_fb_flexbe_states.VENVtmux_setup_from_yaml_state import VENVTmuxSetupFromYamlState
 from acquisition_fb_flexbe_states.check_if_files_were_saved_state import CheckFileSavedState
 from acquisition_fb_flexbe_states.env_vars_userdata_setter import MomentArmAndLibraryEnvSetterUserDataState
-from acquisition_fb_flexbe_states.moticon_insole_vars_userdata_setter import MoticonInsoleSetterUserDataState
 from acquisition_fb_flexbe_states.multi_service_call_state import MultiServiceCallState
 from acquisition_fb_flexbe_states.multi_set_some_param_state import MultiSetSomeParamState
 from acquisition_fb_flexbe_states.play_sound_state import PlaySoundState
@@ -26,7 +24,6 @@ from acquisition_fb_flexbe_states.wait_for_messages import WaitForMessages
 from flexbe_states.check_condition_state import CheckConditionState
 from flexbe_states.log_state import LogState
 from flexbe_states.operator_decision_state import OperatorDecisionState
-from insoles_fb_flexbe_behaviors.insoles_simple_scaling_sm import insoles_simple_scalingSM
 # Additional imports can be added inside the following tags
 # [MANUAL_IMPORT]
 import rospkg
@@ -55,9 +52,6 @@ class Acquire_EverythingSM(Behavior):
 		self.name = 'Acquire_Everything'
 
 		# parameters of this behavior
-		self.add_parameter('run_insoles', False)
-		self.add_parameter('run_id', False)
-		self.add_parameter('run_so', False)
 		self.add_parameter('run_vicon_controller', False)
 		self.add_parameter('remove_path', '/srv/host_data')
 		self.add_parameter('append_path', 'd:/ViconData')
@@ -68,18 +62,14 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('subject_id', 'EX02RE')
 		self.add_parameter('weight', 72)
 		self.add_parameter('height', 1.70)
-		self.add_parameter('insole_size', 'S6 (42-43)')
 		self.add_parameter('combined_acquisition', True)
 		self.add_parameter('use_ar_markers_in_ik', False)
 		self.add_parameter('show_viz_extensive', False)
 		self.add_parameter('record_rosbag', False)
-		self.add_parameter('dummy_insoles', False)
-		self.add_parameter('insole_delay', -0.02)
+		self.add_parameter('rosmaster', 'raspberrypi')
 
 		# references to used behaviors
 		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
-		self.add_behavior(ar_brioSM, 'Node_Startup/ar_brio')
-		self.add_behavior(insoles_simple_scalingSM, 'Node_Startup/insoles_simple_scaling')
 
 		# Additional initialization code can be added inside the following tags
 		# [MANUAL_INIT]
@@ -118,9 +108,6 @@ class Acquire_EverythingSM(Behavior):
 		imu_list = ["thorax","radius"]
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
-		insole_yaml = "dummy_insoles.yaml" if self.dummy_insoles else "insoles_only.yaml"
-		id_yaml = "id_only.yaml"
-		so_yaml = "so_only.yaml"
 		vicon_yaml = "vicon_only.yaml"
 		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port}
 		tmux_session_name = "testtt"
@@ -128,20 +115,15 @@ class Acquire_EverythingSM(Behavior):
 		model_name = "mobl2016_v03"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
-		export_vars = {"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"IMU_LIST":imu_list}
+		export_vars = {"MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"IMU_LIST":imu_list}
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
 		imu_yaml_file = "vioarm.yaml"
-		foot_left_name = "foot_l"
-		foot_right_name = "calcn_r"
 		name_tag = "upper"
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
 		_state_machine.userdata.activity_save_name = ""
-		_state_machine.userdata.use_insoles = self.run_insoles
-		_state_machine.userdata.use_id = self.run_id
-		_state_machine.userdata.use_so = self.run_so
 		_state_machine.userdata.node_start_list = []
 		_state_machine.userdata.use_vicon_controller = self.run_vicon_controller
 		_state_machine.userdata.parked_nodes = ["/ik"]
@@ -149,13 +131,9 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.should_load_ar = self.use_ar_markers_in_ik
 		_state_machine.userdata.use_combined_acquisition = self.combined_acquisition
 		_state_machine.userdata.vicon_vars = vicon_vars
-		_state_machine.userdata.insole_vars = {}
-		_state_machine.userdata.insole_model = self.insole_size
 		_state_machine.userdata.common_vars = common_vars
 		_state_machine.userdata.save_file_list = []
 		_state_machine.userdata.imu_list = imu_list
-		_state_machine.userdata.foot_left_name = foot_left_name
-		_state_machine.userdata.foot_right_name = foot_right_name
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -296,119 +274,9 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['use_id', 'use_insoles', 'use_so', 'node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'insole_model', 'insole_vars', 'common_vars', 'save_file_list', 'foot_left_name', 'foot_right_name'], output_keys=['node_start_list', 'insole_vars', 'save_file_list'])
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'common_vars', 'save_file_list'], output_keys=['node_start_list', 'save_file_list'])
 
 		with _sm_node_startup_2:
-			# x:35 y:174
-			OperatableStateMachine.add('Set_Moticon_Insole_Size',
-										MoticonInsoleSetterUserDataState(),
-										transitions={'done': 'ar_brio'},
-										autonomy={'done': Autonomy.Off},
-										remapping={'insole_model': 'insole_model', 'insole_vars': 'insole_vars', 'common_vars': 'common_vars', 'insole_length': 'insole_length'})
-
-			# x:234 y:169
-			OperatableStateMachine.add('GRF_names_setter',
-										SetRosParamState(namespace_prefix="/id_node", param_dic={"grf_right_apply_to_body":foot_right_name, "grf_left_apply_to_body":foot_left_name}),
-										transitions={'continue': 'insoles_simple_scaling', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
-
-			# x:237 y:286
-			OperatableStateMachine.add('IMU_names_setter',
-										SetRosParamState(namespace_prefix="/ik", param_dic={"imu_observation_order":imu_list}),
-										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
-
-			# x:479 y:621
-			OperatableStateMachine.add('Load_ID_Nodes',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+id_yaml, append_node=["/id_node"], append_save_files=["tau.sto","ik.sto"]),
-										transitions={'continue': 'Run_SO', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
-
-			# x:487 y:286
-			OperatableStateMachine.add('Load_IK_nodes',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+ik_yaml, append_node=["/ik"], append_save_files=["_ik_lower"]),
-										transitions={'continue': 'Run_Insole', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
-
-			# x:478 y:349
-			OperatableStateMachine.add('Load_Insole_Nodes',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+insole_yaml, append_node=["/moticon_insoles"], append_save_files=["_insole.txt"]),
-										transitions={'continue': 'Turn_On_Insoles', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'insole_vars'})
-
-			# x:359 y:725
-			OperatableStateMachine.add('Load_SO_Nodes',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+so_yaml, append_node=["/so_visualization"], append_save_files=["so.sto"]),
-										transitions={'continue': 'ok', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
-
-			# x:481 y:125
-			OperatableStateMachine.add('Load_Vicon_Controller_Node',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_yaml, append_node=["/vicon_control"], append_save_files=[]),
-										transitions={'continue': 'GRF_names_setter', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'vicon_vars'})
-
-			# x:284 y:519
-			OperatableStateMachine.add('Run_ID',
-										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_ID_Nodes', 'false': 'ok'},
-										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
-										remapping={'input_value': 'use_id'})
-
-			# x:286 y:347
-			OperatableStateMachine.add('Run_Insole',
-										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Insole_Nodes', 'false': 'ok'},
-										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
-										remapping={'input_value': 'use_insoles'})
-
-			# x:286 y:608
-			OperatableStateMachine.add('Run_SO',
-										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_SO_Nodes', 'false': 'ok'},
-										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
-										remapping={'input_value': 'use_so'})
-
-			# x:255 y:100
-			OperatableStateMachine.add('Run_Vicon_Controller',
-										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'GRF_names_setter'},
-										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
-										remapping={'input_value': 'use_vicon_controller'})
-
-			# x:518 y:433
-			OperatableStateMachine.add('Turn_On_Insoles',
-										LogState(text="Turn on Tablet and insoles and put shoes on", severity=Logger.REPORT_HINT),
-										transitions={'done': 'Turn_On_Insoles_Now'},
-										autonomy={'done': Autonomy.Full})
-
-			# x:503 y:535
-			OperatableStateMachine.add('Turn_On_Insoles_Now',
-										WaitForMessages(topics_list=["/left/insole","/right/insole"], custom_message="Please start acquiring insoles now.", timeout=40),
-										transitions={'continue': 'Run_ID', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
-
-			# x:177 y:32
-			OperatableStateMachine.add('ar_brio',
-										self.use_behavior(ar_brioSM, 'Node_Startup/ar_brio',
-											parameters={'load_ar_nodes': self.use_ar_markers_in_ik}),
-										transitions={'finished': 'Acquisition_Setup', 'failed': 'failed'},
-										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'should_load_ar': 'should_load_ar'})
-
-			# x:477 y:214
-			OperatableStateMachine.add('insoles_simple_scaling',
-										self.use_behavior(insoles_simple_scalingSM, 'Node_Startup/insoles_simple_scaling',
-											parameters={'insole_length': 0.2742}),
-										transitions={'finished': 'IMU_names_setter', 'failed': 'failed'},
-										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'insole_length': 'insole_length', 'foot_left_name': 'foot_left_name', 'foot_right_name': 'foot_right_name'})
-
 			# x:530 y:23
 			OperatableStateMachine.add('Acquisition_Setup',
 										_sm_acquisition_setup_1,
@@ -416,12 +284,39 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'common_vars': 'common_vars'})
 
+			# x:121 y:258
+			OperatableStateMachine.add('IMU_names_setter',
+										SetRosParamState(namespace_prefix="/ik", param_dic={"imu_observation_order":imu_list}),
+										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:483 y:324
+			OperatableStateMachine.add('Load_IK_nodes',
+										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+ik_yaml, append_node=["/ik"], append_save_files=["_ik_lower"]),
+										transitions={'continue': 'ok', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
+										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
+
+			# x:448 y:167
+			OperatableStateMachine.add('Load_Vicon_Controller_Node',
+										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_yaml, append_node=["/vicon_control"], append_save_files=[]),
+										transitions={'continue': 'IMU_names_setter', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
+										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'vicon_vars'})
+
+			# x:245 y:65
+			OperatableStateMachine.add('Run_Vicon_Controller',
+										CheckConditionState(predicate=lambda x: bool(x)),
+										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'failed'},
+										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
+										remapping={'input_value': 'use_vicon_controller'})
+
 
 
 		with _state_machine:
 			# x:85 y:37
 			OperatableStateMachine.add('Set_Params_Weight_And_Delay',
-										SetRosParamState(namespace_prefix="", param_dic={"/rqt_acquisition/weight":self.weight, "/left/insole_republisher/side_delay":self.insole_delay, "/right/insole_republisher/side_delay":self.insole_delay}),
+										SetRosParamState(namespace_prefix="", param_dic={"/rqt_acquisition/weight":self.weight}),
 										transitions={'continue': 'Node_Startup', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Full})
 
@@ -451,7 +346,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_node_startup_2,
 										transitions={'failed': 'failed', 'ok': 'Imu_Startup_Sequence'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
-										remapping={'use_id': 'use_id', 'use_insoles': 'use_insoles', 'use_so': 'use_so', 'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'insole_model': 'insole_model', 'insole_vars': 'insole_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list', 'foot_left_name': 'foot_left_name', 'foot_right_name': 'foot_right_name'})
+										remapping={'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list'})
 
 			# x:1210 y:601
 			OperatableStateMachine.add('Record_Another',

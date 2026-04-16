@@ -14,5 +14,11 @@
 	<!-- Contained Behaviors -->
 
 	<!-- Available Parameters -->
+	<params>
+
+		<param type="text" name="vio_yaml_file" default="" label="vio_yaml_file" hint="Sets the vio_yaml_file" />
+
+	</params>
+
 
 </behavior>
