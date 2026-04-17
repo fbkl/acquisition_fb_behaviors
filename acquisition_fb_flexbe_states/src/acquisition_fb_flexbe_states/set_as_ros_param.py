@@ -21,7 +21,9 @@ class SetRosParamState(EventState):
         super(SetRosParamState, self).__init__(outcomes = ['continue', 'failed'])
 
         self._ok = True
+        Logger.loginfo("mama i just killed a man")
         Logger.loginfo(repr(param_dic))
+        Logger.loginfo("put a gun against his head")
         if not type(param_dic) == type({"a":1}):
             Logger.logerr("incorrect parameter type for param_dic!")
             self._ok = False
@@ -31,6 +33,8 @@ class SetRosParamState(EventState):
         ## consider updating the dictinary instead
 
     def execute(self, userdata):
+        Logger.loginfo("pulled my finger")
+        
         if self._ok:
             return 'continue' # One of the outcomes declared above.
         return 'failed'
@@ -38,12 +42,15 @@ class SetRosParamState(EventState):
     def on_enter(self, userdata):
         # This method is called when the state becomes active, i.e. a transition from another state to this one is taken.
         # It is primarily used to start actions which are associated with this state.
+        Logger.loginfo("now he's dead")
         try:
             for param, value in self._param_dic.items():
                 rospy.set_param(self._namespace+"/"+param, value)
         except:
             Logger.logerr(f"something went wrong while trying to set parameters {self._namespace} {repr(self._param_dic)}")
             self._ok = False
+        Logger.loginfo("mamma, life had just began")
+        
     def on_exit(self, userdata):
         # This method is called when an outcome is returned and another state gets active.
         # It can be used to stop possibly running processes started by on_enter.
@@ -54,6 +61,7 @@ class SetRosParamState(EventState):
         # This method is called when the behavior is started.
         # If possible, it is generally better to initialize used resources in the constructor
         # because if anything failed, the behavior would not even be started.
+        Logger.loginfo("and now i've thrown it all away")
 
         pass # Nothing to do in this example.
 
@@ -62,6 +70,9 @@ class SetRosParamState(EventState):
         # This method is called whenever the behavior stops execution, also if it is cancelled.
         # Use this event to clean up things like claimed resources.
         for param, value in self._param_dic.items():
-            rospy.delete_param(self._namespace+"/"+param)
+            try:
+                rospy.delete_param(self._namespace+"/"+param)
+            except:
+                pass
 
 

@@ -68,8 +68,8 @@ class bringup_vioSM(Behavior):
 		use_session = "testtt"
 		# x:961 y:87, x:216 y:388
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['vio_export_vars'], output_keys=['vio_export_vars'])
-		_state_machine.userdata.vio_export_vars = ""
-		_state_machine.userdata.disregard = ""
+		_state_machine.userdata.vio_export_vars = {}
+		_state_machine.userdata.disregard = []
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]

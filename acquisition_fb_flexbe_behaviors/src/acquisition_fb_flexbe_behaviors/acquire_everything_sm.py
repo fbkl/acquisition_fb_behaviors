@@ -8,7 +8,7 @@
 ###########################################################
 
 from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyContainer, PriorityContainer, Logger
-from acquisition_fb_flexbe_behaviors.imu_startup_sequence_sm import imu_startup_sequenceSM
+from acquisition_fb_flexbe_behaviors.bringup_vio_sm import bringup_vioSM
 from acquisition_fb_flexbe_states.VENVtmux_setup_from_yaml_state import VENVTmuxSetupFromYamlState
 from acquisition_fb_flexbe_states.check_if_files_were_saved_state import CheckFileSavedState
 from acquisition_fb_flexbe_states.env_vars_userdata_setter import MomentArmAndLibraryEnvSetterUserDataState
@@ -69,7 +69,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('rosmaster', 'raspberrypi')
 
 		# references to used behaviors
-		self.add_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence')
+		self.add_behavior(bringup_vioSM, 'bringup_vio')
 
 		# Additional initialization code can be added inside the following tags
 		# [MANUAL_INIT]
@@ -307,7 +307,7 @@ class Acquire_EverythingSM(Behavior):
 			# x:245 y:65
 			OperatableStateMachine.add('Run_Vicon_Controller',
 										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'failed'},
+										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'IMU_names_setter'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_controller'})
 
@@ -332,19 +332,10 @@ class Acquire_EverythingSM(Behavior):
 										transitions={'continue': 'Calibrate_IK', 'failed': 'Calibrate_IK'},
 										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Full})
 
-			# x:657 y:24
-			OperatableStateMachine.add('Imu_Startup_Sequence',
-										self.use_behavior(imu_startup_sequenceSM, 'Imu_Startup_Sequence',
-											default_keys=['imu_export_vars'],
-											parameters={'imu_yaml_file': imu_yaml_file}),
-										transitions={'finished': 'Start_Parked_Nodes', 'failed': 'failed'},
-										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'imu_list': 'imu_list'})
-
 			# x:371 y:31
 			OperatableStateMachine.add('Node_Startup',
 										_sm_node_startup_2,
-										transitions={'failed': 'failed', 'ok': 'Imu_Startup_Sequence'},
+										transitions={'failed': 'failed', 'ok': 'bringup_vio'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
 										remapping={'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list'})
 
@@ -404,6 +395,14 @@ class Acquire_EverythingSM(Behavior):
 										WaitForMessages(topics_list="/ik/output_filtered", custom_message="Waiting for IK node to start", timeout=1000),
 										transitions={'continue': 'Get_Ready_For_Calibration', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:662 y:24
+			OperatableStateMachine.add('bringup_vio',
+										self.use_behavior(bringup_vioSM, 'bringup_vio',
+											parameters={'vio_yaml_file': imu_yaml_file}),
+										transitions={'finished': 'Start_Parked_Nodes', 'failed': 'failed'},
+										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
+										remapping={'vio_export_vars': 'export_vars'})
 
 			# x:679 y:375
 			OperatableStateMachine.add('Calibrate_IK',

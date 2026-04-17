@@ -24,6 +24,7 @@ class VariableTmuxSetupFromYamlState(EventState):
                 input_keys = ["node_start_list","load_env"],
                 output_keys = ["node_start_list"])
 
+
         self._tmux_manager = None
         # Store state parameter for later use.
         self._session_name = session_name
@@ -32,7 +33,7 @@ class VariableTmuxSetupFromYamlState(EventState):
         self._append_nodes = append_node
         if not os.path.exists(startup_yaml):
             Logger.logerr("file %s does not exist!"%startup_yaml)
-            return 'failed'
+            self._errors.append('no startup yaml file!')
 
         with open(startup_yaml) as stream:
             try:
