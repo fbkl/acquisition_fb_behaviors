@@ -8,6 +8,7 @@
 ###########################################################
 
 from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyContainer, PriorityContainer, Logger
+from acquisition_fb_flexbe_states.variable_multi_service_call_state import VariableMultiServiceCallState
 from acquisition_fb_flexbe_states.variable_tmux_setup_from_yaml_state import VariableTmuxSetupFromYamlState
 from flexbe_states.log_state import LogState
 from flexbe_states.wait_state import WaitState
@@ -32,7 +33,7 @@ class bringup_vioSM(Behavior):
 		self.name = 'bringup_vio'
 
 		# parameters of this behavior
-		self.add_parameter('vio_yaml_file', '')
+		self.add_parameter('vio_yaml_file', 'vioarm.yaml')
 
 		# references to used behaviors
 
@@ -67,9 +68,10 @@ class bringup_vioSM(Behavior):
 		tmux_yaml_path = "/catkin_ws/src/ros_biomech/acquisition_state_machines/acquisition_of_raw_data/config/"
 		use_session = "testtt"
 		# x:961 y:87, x:216 y:388
-		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['vio_export_vars'], output_keys=['vio_export_vars'])
+		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['vio_export_vars', 'ori_list'], output_keys=['vio_export_vars'])
 		_state_machine.userdata.vio_export_vars = {}
 		_state_machine.userdata.disregard = []
+		_state_machine.userdata.ori_list = ["thorax","radius"]
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -91,10 +93,17 @@ class bringup_vioSM(Behavior):
 										transitions={'done': 'don_cameras'},
 										autonomy={'done': Autonomy.Off})
 
-			# x:723 y:79
+			# x:771 y:153
+			OperatableStateMachine.add('calib_vio',
+										VariableMultiServiceCallState(predicate="/calib", prefix=""),
+										transitions={'done': 'finished', 'failed': 'failed'},
+										autonomy={'done': Autonomy.Full, 'failed': Autonomy.Off},
+										remapping={'multi_service_list': 'ori_list'})
+
+			# x:572 y:50
 			OperatableStateMachine.add('don_cameras',
 										LogState(text="place CAMERAs", severity=Logger.REPORT_HINT),
-										transitions={'done': 'finished'},
+										transitions={'done': 'calib_vio'},
 										autonomy={'done': Autonomy.Full})
 
 

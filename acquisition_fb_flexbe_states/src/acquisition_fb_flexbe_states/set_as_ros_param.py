@@ -33,7 +33,7 @@ class SetRosParamState(EventState):
         ## consider updating the dictinary instead
 
     def execute(self, userdata):
-        Logger.loginfo("pulled my finger")
+        Logger.loginfo("pulled my trigger")
         
         if self._ok:
             return 'continue' # One of the outcomes declared above.

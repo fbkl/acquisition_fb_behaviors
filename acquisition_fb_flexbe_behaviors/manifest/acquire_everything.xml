@@ -3,13 +3,12 @@
 <behavior name="Acquire_Everything">
 
 	<executable package_path="acquisition_fb_flexbe_behaviors.acquire_everything_sm" class="Acquire_EverythingSM" />
-	<tagstring>acquisition, tmux, sound, old_heading, upright, ar</tagstring>
+	<tagstring>acquisition, tmux, sound, old_heading, ar</tagstring>
 	<author>frekle</author>
 	<date>Wed Oct 23 2024</date>
 	<description>
-		acquire using embeddable IMU behavior
+		acquire using embeddable VIO behavior
 - with tmux 
-- IMUs with upright start
 - IK using old heading 
 - playing sounds
 - now tries to add camera as well

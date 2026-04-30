@@ -37,9 +37,8 @@ Created on Wed Oct 23 2024
 '''
 class Acquire_EverythingSM(Behavior):
 	'''
-	acquire using embeddable IMU behavior
+	acquire using embeddable VIO behavior
 - with tmux 
-- IMUs with upright start
 - IK using old heading 
 - playing sounds
 - now tries to add camera as well
@@ -105,20 +104,20 @@ class Acquire_EverythingSM(Behavior):
 	def create(self):
 		save_dir = "/srv/host_data/tmp"
 		tmux_yaml_path = self.find_pkg("acquisition_of_raw_data")+"/config/"
-		imu_list = ["thorax","radius"]
+		ori_list = ["thorax","radius"]
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
 		vicon_yaml = "vicon_only.yaml"
 		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port}
 		tmux_session_name = "testtt"
-		model_dir = "/srv/host_data/mobl2016/"
+		model_dir = "/srv/data/mobl2016/"
 		model_name = "mobl2016_v03"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
-		export_vars = {"MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"IMU_LIST":imu_list}
-		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/Control_Acquisition_small_tabs.perspective"
+		export_vars = {"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
+		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/VIOControl_Acquisition_small_tabs.perspective"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
-		imu_yaml_file = "vioarm.yaml"
+		ori_yaml_file = "vioarm.yaml"
 		name_tag = "upper"
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
@@ -133,7 +132,7 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.vicon_vars = vicon_vars
 		_state_machine.userdata.common_vars = common_vars
 		_state_machine.userdata.save_file_list = []
-		_state_machine.userdata.imu_list = imu_list
+		_state_machine.userdata.ori_list = ori_list
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -204,7 +203,7 @@ class Acquire_EverythingSM(Behavior):
 
 			# x:454 y:640
 			OperatableStateMachine.add('Load_Rqt_Acquisition',
-										TmuxSetupState(session_name=tmux_session_name, startup_dic={"acq":["rqt --standalone rqt_acquisition"]}),
+										TmuxSetupState(session_name=tmux_session_name, startup_dic={"acq":["rqt --standalone rqt_vioacq"]}),
 										transitions={'continue': 'Update_Model', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Full})
 
@@ -284,12 +283,6 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
 										remapping={'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'common_vars': 'common_vars'})
 
-			# x:121 y:258
-			OperatableStateMachine.add('IMU_names_setter',
-										SetRosParamState(namespace_prefix="/ik", param_dic={"imu_observation_order":imu_list}),
-										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
-
 			# x:483 y:324
 			OperatableStateMachine.add('Load_IK_nodes',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+ik_yaml, append_node=["/ik"], append_save_files=["_ik_lower"]),
@@ -300,14 +293,20 @@ class Acquire_EverythingSM(Behavior):
 			# x:448 y:167
 			OperatableStateMachine.add('Load_Vicon_Controller_Node',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_yaml, append_node=["/vicon_control"], append_save_files=[]),
-										transitions={'continue': 'IMU_names_setter', 'failed': 'failed'},
+										transitions={'continue': 'ORI_names_setter', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'vicon_vars'})
+
+			# x:121 y:258
+			OperatableStateMachine.add('ORI_names_setter',
+										SetRosParamState(namespace_prefix="/ik", param_dic={"imu_observation_order":ori_list}),
+										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
 			# x:245 y:65
 			OperatableStateMachine.add('Run_Vicon_Controller',
 										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'IMU_names_setter'},
+										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'ORI_names_setter'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_controller'})
 
@@ -399,10 +398,10 @@ class Acquire_EverythingSM(Behavior):
 			# x:662 y:24
 			OperatableStateMachine.add('bringup_vio',
 										self.use_behavior(bringup_vioSM, 'bringup_vio',
-											parameters={'vio_yaml_file': imu_yaml_file}),
+											parameters={'vio_yaml_file': ori_yaml_file}),
 										transitions={'finished': 'Start_Parked_Nodes', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'vio_export_vars': 'export_vars'})
+										remapping={'vio_export_vars': 'export_vars', 'ori_list': 'ori_list'})
 
 			# x:679 y:375
 			OperatableStateMachine.add('Calibrate_IK',
