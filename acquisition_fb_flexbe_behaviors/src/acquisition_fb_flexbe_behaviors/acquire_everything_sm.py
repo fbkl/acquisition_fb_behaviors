@@ -110,8 +110,8 @@ class Acquire_EverythingSM(Behavior):
 		vicon_yaml = "vicon_only.yaml"
 		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port}
 		tmux_session_name = "testtt"
-		model_dir = "/srv/data/mobl2016/"
-		model_name = "mobl2016_v03"
+		model_dir = "/srv/shared/MOBL/"
+		model_name = "MOBL_ARMS_41"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
 		export_vars = {"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"thorax", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
