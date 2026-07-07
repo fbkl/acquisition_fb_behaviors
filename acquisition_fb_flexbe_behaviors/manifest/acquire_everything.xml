@@ -3,7 +3,7 @@
 <behavior name="Acquire_Everything">
 
 	<executable package_path="acquisition_fb_flexbe_behaviors.acquire_everything_sm" class="Acquire_EverythingSM" />
-	<tagstring>acquisition, tmux, sound, old_heading, ar</tagstring>
+	<tagstring>acquisition, tmux, sound, old_heading</tagstring>
 	<author>frekle</author>
 	<date>Wed Oct 23 2024</date>
 	<description>
@@ -60,6 +60,10 @@
 		<param type="boolean" name="record_rosbag" default="False" label="record_rosbag" hint="Sets the record_rosbag" />
 
 		<param type="text" name="rosmaster" default="raspberrypi" label="rosmaster" hint="rosmaster name" />
+
+		<param type="boolean" name="run_vicon_bridge" default="True" label="run_vicon_bridge" hint="Sets the run_vicon_bridge" />
+
+		<param type="boolean" name="vicon_dummy" default="True" label="vicon_dummy" hint="Sets the vicon_dummy" />
 
 	</params>
 
