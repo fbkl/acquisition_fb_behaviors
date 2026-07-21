@@ -68,6 +68,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('rosmaster', 'raspberrypi')
 		self.add_parameter('run_vicon_bridge', True)
 		self.add_parameter('vicon_dummy', True)
+		self.add_parameter('filter_output', False)
 
 		# references to used behaviors
 		self.add_behavior(bringup_vioSM, 'bringup_vio')
@@ -106,23 +107,25 @@ class Acquire_EverythingSM(Behavior):
 	def create(self):
 		save_dir = "/srv/host_data/tmp"
 		tmux_yaml_path = self.find_pkg("acquisition_of_raw_data")+"/config/"
-		ori_list = ["torso","radius_r"]
-		calib_sound_file = "/srv/host_data/calib.wav"
-		ik_yaml = "plus_ik.yaml"
-		vicon_yaml = "vicon_only.yaml"
-		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port,"VICON_DUMMY":self.vicon_dummy}
+		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/VIOControl_Acquisition_small_tabs.perspective"
 		tmux_session_name = "testtt"
-		model_dir = "/srv/shared/raquegopal/"
-		model_name = "raquegopal_2026"
+		name_tag = "upper"
+		ori_list = ["torso","radius_r"]
+		model = "raquegopal"
+		model_dir = f"/srv/shared/{model}/"
+		model_name = f"{model}_2026"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
-		export_vars = {"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"torso", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition}
-		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/VIOControl_Acquisition_small_tabs.perspective"
-		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,}
+		calib_sound_file = "/srv/host_data/calib.wav"
+		ik_yaml = "plus_ik.yaml"
 		ori_yaml_file = "vioarm.yaml"
-		name_tag = "upper"
 		vicon_bridge_yaml = "vicon_bridge.yaml"
+		vicon_yaml = "vicon_only.yaml"
+		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,"DISABLE_ROS1_EOL_WARNINGS":"1"}
+		export_vars = {**common_vars,"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"torso", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"FILTER_OUT":self.filter_output}
+		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port,"VICON_DUMMY":self.vicon_dummy}
 		vicon_bridge_vars = {**export_vars,**vicon_vars}
+		vio_machines = {"torso":"rpi5-ubuntu","radius_r":"silver"}
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
@@ -139,6 +142,8 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.ori_list = ori_list
 		_state_machine.userdata.use_vicon_bridge = self.run_vicon_bridge
 		_state_machine.userdata.vicon_bridge_vars = vicon_bridge_vars
+		_state_machine.userdata.use_filter = self.filter_output
+		_state_machine.userdata.vio_units = vio_machines
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -307,7 +312,7 @@ class Acquire_EverythingSM(Behavior):
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_bridge_yaml, append_node=["/vicon/ik"], append_save_files=["_ik_vicon"+name_tag]),
 										transitions={'continue': 'ok', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'vicon_bridge_vars'})
+										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
 
 			# x:448 y:167
 			OperatableStateMachine.add('Load_Vicon_Controller_Node',
@@ -351,7 +356,7 @@ class Acquire_EverythingSM(Behavior):
 										transitions={'continue': 'Say_To_Change_Name', 'failed': 'Say_To_Change_Name'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
-			# x:679 y:293
+			# x:678 y:310
 			OperatableStateMachine.add('Get_Ready_For_Calibration',
 										PlaySoundState(sound_file="/srv/host_data/calib.wav", retries=5, which_player="paplay"),
 										transitions={'continue': 'Calibrate_IK', 'failed': 'Calibrate_IK'},
@@ -390,10 +395,10 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'node_start_list'})
 
-			# x:674 y:130
+			# x:665 y:93
 			OperatableStateMachine.add('Start_Parked_Nodes',
 										VariableMultiServiceCallState(predicate="/start_now", prefix=""),
-										transitions={'done': 'Wait_For_Ik_To_Be_Ready', 'failed': 'failed'},
+										transitions={'done': 'if_filtered', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'parked_nodes'})
 
@@ -415,21 +420,34 @@ class Acquire_EverythingSM(Behavior):
 										transitions={'continue': 'Record_Another', 'failed': 'Record_Another'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
-			# x:679 y:212
-			OperatableStateMachine.add('Wait_For_Ik_To_Be_Ready',
+			# x:749 y:215
+			OperatableStateMachine.add('Wait_For_Filtered_Ik_To_Be_Ready',
 										WaitForMessages(topics_list="/vio/ik/output_filtered", custom_message="Waiting for IK node to start", timeout=1000),
 										transitions={'continue': 'Get_Ready_For_Calibration', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
-			# x:662 y:24
+			# x:627 y:153
+			OperatableStateMachine.add('Wait_For_Normal_Ik_To_Be_Ready',
+										WaitForMessages(topics_list="/vio/ik/output", custom_message="Waiting for normal ik to be ready", timeout=600),
+										transitions={'continue': 'Get_Ready_For_Calibration', 'failed': 'failed'},
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+
+			# x:623 y:14
 			OperatableStateMachine.add('bringup_vio',
 										self.use_behavior(bringup_vioSM, 'bringup_vio',
 											parameters={'vio_yaml_file': ori_yaml_file}),
 										transitions={'finished': 'Start_Parked_Nodes', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'vio_export_vars': 'export_vars', 'ori_list': 'ori_list'})
+										remapping={'vio_export_vars': 'export_vars', 'vio_units': 'vio_units'})
 
-			# x:679 y:375
+			# x:886 y:121
+			OperatableStateMachine.add('if_filtered',
+										CheckConditionState(predicate=lambda x: bool(x)),
+										transitions={'true': 'Wait_For_Filtered_Ik_To_Be_Ready', 'false': 'Wait_For_Normal_Ik_To_Be_Ready'},
+										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
+										remapping={'input_value': 'use_filter'})
+
+			# x:674 y:396
 			OperatableStateMachine.add('Calibrate_IK',
 										MultiServiceCallState(multi_service_list="/vio/ik", predicate="/calibrate", prefix="", wait_to_start=False, timeout=60),
 										transitions={'done': 'Calibration_Complete', 'failed': 'failed'},

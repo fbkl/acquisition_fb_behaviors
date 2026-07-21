@@ -8,8 +8,8 @@
 ###########################################################
 
 from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyContainer, PriorityContainer, Logger
+from acquisition_fb_flexbe_states.VENVtmux_setup_Variable_vio_state import VENVTmuxSetupVariableVIOState
 from acquisition_fb_flexbe_states.variable_multi_service_call_state import VariableMultiServiceCallState
-from acquisition_fb_flexbe_states.variable_tmux_setup_from_yaml_state import VariableTmuxSetupFromYamlState
 from flexbe_states.log_state import LogState
 from flexbe_states.wait_state import WaitState
 # Additional imports can be added inside the following tags
@@ -68,10 +68,10 @@ class bringup_vioSM(Behavior):
 		tmux_yaml_path = "/catkin_ws/src/ros_biomech/acquisition_state_machines/acquisition_of_raw_data/config/"
 		use_session = "testtt"
 		# x:961 y:87, x:216 y:388
-		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['vio_export_vars', 'ori_list'], output_keys=['vio_export_vars'])
+		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['vio_export_vars', 'vio_units'], output_keys=['vio_export_vars'])
 		_state_machine.userdata.vio_export_vars = {}
 		_state_machine.userdata.disregard = []
-		_state_machine.userdata.ori_list = ["thorax","radius"]
+		_state_machine.userdata.vio_units = {"thorax":"silver","radius":"rpi5-ubuntu"}
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
@@ -80,12 +80,12 @@ class bringup_vioSM(Behavior):
 
 
 		with _state_machine:
-			# x:133 y:64
-			OperatableStateMachine.add('Load_VIO_Nodes',
-										VariableTmuxSetupFromYamlState(session_name=use_session, startup_yaml=tmux_yaml_path+self.vio_yaml_file, append_node=[]),
+			# x:182 y:36
+			OperatableStateMachine.add('Load_VIO_VNodes',
+										VENVTmuxSetupVariableVIOState(session_name=use_session, startup_yaml=tmux_yaml_path+self.vio_yaml_file, append_node=[], append_save_files=[]),
 										transitions={'continue': 'Wait_for_VIO_Start', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'disregard', 'load_env': 'vio_export_vars'})
+										remapping={'node_start_list': 'disregard', 'save_file_list': 'disregard', 'vio_units': 'vio_units', 'load_env': 'vio_export_vars'})
 
 			# x:344 y:161
 			OperatableStateMachine.add('Wait_for_VIO_Start',
@@ -98,7 +98,7 @@ class bringup_vioSM(Behavior):
 										VariableMultiServiceCallState(predicate="/calib", prefix=""),
 										transitions={'done': 'finished', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Full, 'failed': Autonomy.Off},
-										remapping={'multi_service_list': 'ori_list'})
+										remapping={'multi_service_list': 'vio_units'})
 
 			# x:572 y:50
 			OperatableStateMachine.add('don_cameras',

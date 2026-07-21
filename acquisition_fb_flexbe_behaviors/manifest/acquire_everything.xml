@@ -65,6 +65,8 @@
 
 		<param type="boolean" name="vicon_dummy" default="True" label="vicon_dummy" hint="Sets the vicon_dummy" />
 
+		<param type="boolean" name="filter_output" default="False" label="filter_output" hint="Sets the filter_output" />
+
 	</params>
 
 
