@@ -6,9 +6,8 @@ from tmux_launch.tmux_session_manager import *
 
 import yaml
 import os
-import re
 
-class VENVTmuxSetupVariableVIOState(EventState):
+class VENVTmuxSetupFromYamlState2(EventState):
     '''
         starts tmux
 §
@@ -21,8 +20,8 @@ class VENVTmuxSetupVariableVIOState(EventState):
 
     def __init__(self, session_name, startup_yaml,append_node=[],append_save_files=[]):
         # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
-        super(VENVTmuxSetupVariableVIOState, self).__init__(outcomes = ['continue', 'failed'],
-                input_keys = ["node_start_list","save_file_list","ori_list","vio_units", 'load_env'],
+        super(VENVTmuxSetupFromYamlState2, self).__init__(outcomes = ['continue', 'failed'],
+                input_keys = ["node_start_list","save_file_list", 'load_env','load_env2'],
                 output_keys = ["node_start_list","save_file_list"])
 
 
@@ -68,47 +67,17 @@ class VENVTmuxSetupVariableVIOState(EventState):
         else:
             return 'continue' # One of the outcomes declared above.
 
-    @staticmethod
-    def parse_dict(startup_dict,units):
-        final_startup_dict = {}
-        regex_unit = re.compile("{UNIT}")
-        regex_machine = re.compile("{MACHINE}")
-        for key, cmds in startup_dict.items():
-            #print(key,cmds)
-            #print("¤"*40)
-            for cmd in cmds:
-                complete_list = []
-                if "{UNIT}" in cmd:
-                    for a_unit,in_a_machine in units.items():
-                        new_str = cmd
-                        #print(f"inital cmd: {new_str}")
-                        new_str = regex_unit.sub(a_unit,cmd)
-                        new_str = regex_machine.sub(in_a_machine,new_str)
-                        #print(f"updated cmd: {new_str}")
-                        if key in final_startup_dict:
-                            complete_list = final_startup_dict[key]
-                        complete_list.append(new_str)
-                        #print(f"complete list: {complete_list}")
-                else:
-                    if key in final_startup_dict:
-                        complete_list = final_startup_dict[key]
-                    complete_list.append(cmd)
-                final_startup_dict.update({key:complete_list})
-                #print(f"final startup dict updated for the current cmd:\n {final_startup_dict}")
-        return final_startup_dict
 
     def on_enter(self, userdata):
-        rospy.loginfo("envs:"+repr(userdata.load_env))
-        Logger.loghint(f"userdata.ori_list state during on_enter Variable vio state: {userdata.ori_list}")
-        self._tmux_manager.load_env=userdata.load_env
+
+        rospy.loginfo("envs1:"+repr(userdata.load_env))
+        rospy.loginfo("envs2:"+repr(userdata.load_env2))
+        self._tmux_manager.load_env={**userdata.load_env, **userdata.load_env2}
 
         userdata.node_start_list.extend(self._append_nodes) 
         ##manager already exists and also the session, we only attach and create the windows
         self._loading = True
-        ## Update the vio units
-
-        final_startup_dict = self.parse_dict(self._startup_dic, self.zipit(userdata.ori_list,userdata.vio_units))
-        create_some_windows(window_dic=final_startup_dict, some_manager= self._tmux_manager)
+        create_some_windows(window_dic=self._startup_dic, some_manager= self._tmux_manager)
         ## I should detect failures, shouldnt I?
         self._loading = False
         userdata.save_file_list.extend(self._append_files)
@@ -134,30 +103,3 @@ class VENVTmuxSetupVariableVIOState(EventState):
 
         self._tmux_manager.close_own_windows()
 
-    def test(self,vio_units):
-
-        final_startup_dict = self.parse_dict(self._startup_dic, vio_units)
-        print(final_startup_dict)
-
-    @staticmethod
-    def zipit(a,b):
-        if not len(a) ==len(b):
-            raise Exception("number of units and number of orientation names dont match up!!!!!")
-        d = {}
-        for ai,bi in zip(a,b):
-            d.update({ai:bi})
-        return d
-
-if __name__ == '__main__':
-    import rospy
-    rospy.init_node("a")
-    vio_units = {
-            "torso":"silver",
-            "radius":"rpi5-ubuntu",
-            "right_leg":"imaginary_pi1",
-            "right_umbilicus":"imaginary_pi2",
-            "right_wing":"imaginary_pi3",
-            "right_purse":"imaginary_pi4",
-            }
-    a = VENVTmuxSetupVariableVIOState("testtt", "../../../../acquisition_of_raw_data/config/vioarm.yaml")
-    a.test(vio_units)

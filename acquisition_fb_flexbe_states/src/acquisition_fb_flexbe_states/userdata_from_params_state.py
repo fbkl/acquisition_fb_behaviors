@@ -47,6 +47,7 @@ class UserDataFromParamsState(EventState):
           #userdata.ros_params = self._my_data
           self._my_data = rospy.get_param(self._param_path)
 
+          Logger.loghint(f"param im reading: {self._param_path}\nvalue: {self._my_data}\nStored in: userdata.{self._data_property_name}")
           setattr(userdata, self._data_property_name, self._my_data)
           self._return_code = 'done'
         except Exception as e:

@@ -56,9 +56,14 @@ class MomentArmAndLibraryEnvSetterUserDataState(EventState):
               Logger.logerr(f"You gave me a file with a strange extension, are you sure the name is correct?\n{userdata.lib}")
           
           assert(userdata.model)
+          model_dir , model_file = os.path.split(userdata.model)
           assert(lib_file)
-          userdata.env_vars.update(  {"MODEL_FILE": userdata.model, "MOMENT_ARM_LIB": lib_file, "USE_AR": userdata.should_load_ar})
-          Logger.logdebug(f"[env_vars_userdata_setter] env_vars:  {userdata.env_vars}")
+          userdata.env_vars.update(  {  "MODEL_FILE": userdata.model,
+                                        "MODEL_DIR": model_dir,
+                                        "XXXXXXXXXXXXXXXXXXXXXXXXX": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy", 
+                                        "MOMENT_ARM_LIB": lib_file, 
+                                        "USE_AR": userdata.should_load_ar})
+          Logger.loginfo(f"[env_vars_userdata_setter] after setting userdata the vars are: env_vars:  {userdata.env_vars}")
           self._return_code = 'done'
         except:
             traceback.print_exc()

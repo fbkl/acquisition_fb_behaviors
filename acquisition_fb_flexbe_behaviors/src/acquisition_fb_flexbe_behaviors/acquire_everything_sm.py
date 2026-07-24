@@ -10,6 +10,7 @@
 from flexbe_core import Behavior, Autonomy, OperatableStateMachine, ConcurrencyContainer, PriorityContainer, Logger
 from acquisition_fb_flexbe_behaviors.bringup_vio_sm import bringup_vioSM
 from acquisition_fb_flexbe_states.VENVtmux_setup_from_yaml_state import VENVTmuxSetupFromYamlState
+from acquisition_fb_flexbe_states.VENVtmux_setup_from_yaml_state2 import VENVTmuxSetupFromYamlState2
 from acquisition_fb_flexbe_states.check_if_files_were_saved_state import CheckFileSavedState
 from acquisition_fb_flexbe_states.env_vars_userdata_setter import MomentArmAndLibraryEnvSetterUserDataState
 from acquisition_fb_flexbe_states.multi_service_call_state import MultiServiceCallState
@@ -122,10 +123,9 @@ class Acquire_EverythingSM(Behavior):
 		vicon_bridge_yaml = "vicon_bridge.yaml"
 		vicon_yaml = "vicon_only.yaml"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,"DISABLE_ROS1_EOL_WARNINGS":"1"}
-		export_vars = {**common_vars,"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"torso", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"FILTER_OUT":self.filter_output}
+		export_vars = {**common_vars,"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"torso", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"FILTER_OUT":self.filter_output,"MODEL_DIR":model_dir}
 		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port,"VICON_DUMMY":self.vicon_dummy}
-		vicon_bridge_vars = {**export_vars,**vicon_vars}
-		vio_machines = {"torso":"rpi5-ubuntu","radius_r":"silver"}
+		vio_machines = ["rpi5-ubuntu","silver"]
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
@@ -139,9 +139,8 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.vicon_vars = vicon_vars
 		_state_machine.userdata.common_vars = common_vars
 		_state_machine.userdata.save_file_list = []
-		_state_machine.userdata.ori_list = ori_list
+		_state_machine.userdata.ori_list = []
 		_state_machine.userdata.use_vicon_bridge = self.run_vicon_bridge
-		_state_machine.userdata.vicon_bridge_vars = vicon_bridge_vars
 		_state_machine.userdata.use_filter = self.filter_output
 		_state_machine.userdata.vio_units = vio_machines
 
@@ -197,7 +196,7 @@ class Acquire_EverythingSM(Behavior):
 
 
 		# x:1304 y:830, x:862 y:381
-		_sm_acquisition_setup_1 = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['export_vars', 'should_load_ar', 'use_combined_acquisition', 'common_vars'], output_keys=['export_vars'])
+		_sm_acquisition_setup_1 = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['export_vars', 'should_load_ar', 'use_combined_acquisition', 'common_vars', 'ori_list'], output_keys=['export_vars', 'ori_list'])
 
 		with _sm_acquisition_setup_1:
 			# x:420 y:52
@@ -206,13 +205,13 @@ class Acquire_EverythingSM(Behavior):
 										transitions={'done': 'Set_Lib_Path', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
-			# x:108 y:616
+			# x:94 y:560
 			OperatableStateMachine.add('Load_Combined_Perspective',
 										TmuxSetupState(session_name=tmux_session_name, startup_dic={"acq":[f"rqt --perspective-file {combined_perspective_file}"]}),
 										transitions={'continue': 'Update_Model', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Full, 'failed': Autonomy.Full})
 
-			# x:454 y:640
+			# x:441 y:572
 			OperatableStateMachine.add('Load_Rqt_Acquisition',
 										TmuxSetupState(session_name=tmux_session_name, startup_dic={"acq":["rqt --standalone rqt_vioacq"]}),
 										transitions={'continue': 'Update_Model', 'failed': 'failed'},
@@ -248,12 +247,6 @@ class Acquire_EverythingSM(Behavior):
 										transitions={'done': 'Set_Session_Id', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
-			# x:1040 y:790
-			OperatableStateMachine.add('Set_Vio_Units',
-										MultiSetSomeParamState(multi_node_list=["rqt_acquisition"], param_to_set="ori_list", value_of_param=ori_list, check_if_nodes_exist=False),
-										transitions={'done': 'finished', 'failed': 'failed'},
-										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
-
 			# x:430 y:869
 			OperatableStateMachine.add('Setter',
 										MomentArmAndLibraryEnvSetterUserDataState(),
@@ -261,24 +254,31 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'done': Autonomy.Off},
 										remapping={'model': 'model_path', 'lib': 'lib_path', 'should_load_ar': 'should_load_ar', 'env_vars': 'export_vars', 'common_vars': 'common_vars'})
 
-			# x:448 y:792
+			# x:437 y:725
 			OperatableStateMachine.add('Update_Lib',
 										UserDataFromParamsState(param_path="rqt_acquisition/lib_path", data_property_name="lib_path"),
-										transitions={'done': 'Setter'},
+										transitions={'done': 'Update_Ori_List'},
 										autonomy={'done': Autonomy.Off},
 										remapping={'lib_path': 'lib_path'})
 
-			# x:448 y:717
+			# x:439 y:650
 			OperatableStateMachine.add('Update_Model',
 										UserDataFromParamsState(param_path="rqt_acquisition/model_path", data_property_name="model_path"),
 										transitions={'done': 'Update_Lib'},
 										autonomy={'done': Autonomy.Off},
 										remapping={'model_path': 'model_path'})
 
+			# x:436 y:793
+			OperatableStateMachine.add('Update_Ori_List',
+										UserDataFromParamsState(param_path="rqt_acquisition/ori_list", data_property_name="ori_list"),
+										transitions={'done': 'Setter'},
+										autonomy={'done': Autonomy.Off},
+										remapping={'ori_list': 'ori_list'})
+
 			# x:758 y:811
 			OperatableStateMachine.add('call_disable_setting_model_in_acquision',
 										MultiServiceCallState(multi_service_list="/rqt_acquisition/set_running", predicate="", prefix="", wait_to_start=False, timeout=60),
-										transitions={'done': 'Set_Vio_Units', 'failed': 'failed'},
+										transitions={'done': 'finished', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
 
 			# x:124 y:459
@@ -289,8 +289,8 @@ class Acquire_EverythingSM(Behavior):
 										remapping={'input_value': 'use_combined_acquisition'})
 
 
-		# x:953 y:222, x:68 y:409
-		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'common_vars', 'save_file_list', 'use_vicon_bridge', 'vicon_bridge_vars'], output_keys=['node_start_list', 'save_file_list'])
+		# x:953 y:222, x:67 y:409
+		_sm_node_startup_2 = OperatableStateMachine(outcomes=['failed', 'ok'], input_keys=['node_start_list', 'use_vicon_controller', 'export_vars', 'should_load_ar', 'use_combined_acquisition', 'vicon_vars', 'common_vars', 'save_file_list', 'use_vicon_bridge', 'ori_list'], output_keys=['node_start_list', 'save_file_list', 'ori_list'])
 
 		with _sm_node_startup_2:
 			# x:530 y:23
@@ -298,7 +298,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_acquisition_setup_1,
 										transitions={'finished': 'Run_Vicon_Controller', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'common_vars': 'common_vars'})
+										remapping={'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'common_vars': 'common_vars', 'ori_list': 'ori_list'})
 
 			# x:483 y:324
 			OperatableStateMachine.add('Load_IK_nodes',
@@ -307,12 +307,12 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
 
-			# x:372 y:548
-			OperatableStateMachine.add('Load_Vicon_Bridge_AndIK',
-										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_bridge_yaml, append_node=["/vicon/ik"], append_save_files=["_ik_vicon"+name_tag]),
+			# x:641 y:596
+			OperatableStateMachine.add('Load_Vicon_Bridge_And_IK2',
+										VENVTmuxSetupFromYamlState2(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_bridge_yaml, append_node=["/vicon/ik"], append_save_files=["_ik_vicon"+name_tag]),
 										transitions={'continue': 'ok', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars'})
+										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'export_vars', 'load_env2': 'vicon_vars'})
 
 			# x:448 y:167
 			OperatableStateMachine.add('Load_Vicon_Controller_Node',
@@ -330,7 +330,7 @@ class Acquire_EverythingSM(Behavior):
 			# x:240 y:375
 			OperatableStateMachine.add('Run_Vicon_Bridge',
 										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Vicon_Bridge_AndIK', 'false': 'ok'},
+										transitions={'true': 'Load_Vicon_Bridge_And_IK2', 'false': 'ok'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_bridge'})
 
@@ -367,7 +367,7 @@ class Acquire_EverythingSM(Behavior):
 										_sm_node_startup_2,
 										transitions={'failed': 'failed', 'ok': 'bringup_vio'},
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
-										remapping={'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list', 'use_vicon_bridge': 'use_vicon_bridge', 'vicon_bridge_vars': 'vicon_bridge_vars'})
+										remapping={'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list', 'use_vicon_bridge': 'use_vicon_bridge', 'ori_list': 'ori_list'})
 
 			# x:1210 y:601
 			OperatableStateMachine.add('Record_Another',
@@ -438,7 +438,7 @@ class Acquire_EverythingSM(Behavior):
 											parameters={'vio_yaml_file': ori_yaml_file}),
 										transitions={'finished': 'Start_Parked_Nodes', 'failed': 'failed'},
 										autonomy={'finished': Autonomy.Inherit, 'failed': Autonomy.Inherit},
-										remapping={'vio_export_vars': 'export_vars', 'vio_units': 'vio_units'})
+										remapping={'vio_export_vars': 'export_vars', 'vio_units': 'vio_units', 'ori_list': 'ori_list'})
 
 			# x:886 y:121
 			OperatableStateMachine.add('if_filtered',

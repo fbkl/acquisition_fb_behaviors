@@ -68,10 +68,11 @@ class bringup_vioSM(Behavior):
 		tmux_yaml_path = "/catkin_ws/src/ros_biomech/acquisition_state_machines/acquisition_of_raw_data/config/"
 		use_session = "testtt"
 		# x:961 y:87, x:216 y:388
-		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['vio_export_vars', 'vio_units'], output_keys=['vio_export_vars'])
+		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'], input_keys=['vio_export_vars', 'vio_units', 'ori_list'], output_keys=['vio_export_vars'])
 		_state_machine.userdata.vio_export_vars = {}
 		_state_machine.userdata.disregard = []
-		_state_machine.userdata.vio_units = {"thorax":"silver","radius":"rpi5-ubuntu"}
+		_state_machine.userdata.vio_units = ["silver","rpi5-ubuntu"]
+		_state_machine.userdata.ori_list = ["torso","radius_r"]
 
 		# Additional creation code can be added inside the following tags
 		# [MANUAL_CREATE]
