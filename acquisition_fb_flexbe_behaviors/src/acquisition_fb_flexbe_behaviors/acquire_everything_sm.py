@@ -17,6 +17,7 @@ from acquisition_fb_flexbe_states.multi_service_call_state import MultiServiceCa
 from acquisition_fb_flexbe_states.multi_set_some_param_state import MultiSetSomeParamState
 from acquisition_fb_flexbe_states.play_sound_state import PlaySoundState
 from acquisition_fb_flexbe_states.set_as_ros_param import SetRosParamState
+from acquisition_fb_flexbe_states.set_as_ros_param_from_userdata import SetRosParamFromUserdataState
 from acquisition_fb_flexbe_states.tmux_setup_state import TmuxSetupState
 from acquisition_fb_flexbe_states.userdata_from_params_state import UserDataFromParamsState
 from acquisition_fb_flexbe_states.variable_multi_service_call_state import VariableMultiServiceCallState
@@ -111,7 +112,6 @@ class Acquire_EverythingSM(Behavior):
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/VIOControl_Acquisition_small_tabs.perspective"
 		tmux_session_name = "testtt"
 		name_tag = "upper"
-		ori_list = ["torso","radius_r"]
 		model = "raquegopal"
 		model_dir = f"/srv/shared/{model}/"
 		model_name = f"{model}_2026"
@@ -317,15 +317,16 @@ class Acquire_EverythingSM(Behavior):
 			# x:448 y:167
 			OperatableStateMachine.add('Load_Vicon_Controller_Node',
 										VENVTmuxSetupFromYamlState(session_name=tmux_session_name, startup_yaml=tmux_yaml_path+vicon_yaml, append_node=["/vicon_control"], append_save_files=[]),
-										transitions={'continue': 'ORI_names_setter', 'failed': 'failed'},
+										transitions={'continue': 'ORI_names_from_Userdata_setter', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'node_start_list': 'node_start_list', 'save_file_list': 'save_file_list', 'load_env': 'vicon_vars'})
 
-			# x:121 y:258
-			OperatableStateMachine.add('ORI_names_setter',
-										SetRosParamState(namespace_prefix="/vio/ik", param_dic={"imu_observation_order":ori_list}),
+			# x:39 y:242
+			OperatableStateMachine.add('ORI_names_from_Userdata_setter',
+										SetRosParamFromUserdataState(namespace_prefix="/vio/ik/imu_observation_order", my_userdata_param="ori_list"),
 										transitions={'continue': 'Load_IK_nodes', 'failed': 'failed'},
-										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
+										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
+										remapping={'ori_list': 'ori_list'})
 
 			# x:240 y:375
 			OperatableStateMachine.add('Run_Vicon_Bridge',
@@ -337,7 +338,7 @@ class Acquire_EverythingSM(Behavior):
 			# x:245 y:65
 			OperatableStateMachine.add('Run_Vicon_Controller',
 										CheckConditionState(predicate=lambda x: bool(x)),
-										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'ORI_names_setter'},
+										transitions={'true': 'Load_Vicon_Controller_Node', 'false': 'ORI_names_from_Userdata_setter'},
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_controller'})
 

@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+import rospy
+
+from flexbe_core import EventState, Logger
+
+
+class SetRosParamFromUserdataState(EventState):
+    '''
+    The whole thing about parameter passing is driving me insane. There is a reason why ROS has a parameter server, please, use it
+
+    -- namespace_prefix         string  Parameters will be set to this namespace
+    -- my_userdata_param       string 	Userdata named variable containing dictionary of parameters to be set
+
+    <= continue 			Parameter set correctly.
+    <= failed 				Something went wrong.
+
+    '''
+
+    def __init__(self, namespace_prefix, my_userdata_param):
+        # Declare outcomes, input_keys, and output_keys by calling the super constructor with the corresponding arguments.
+        super(SetRosParamFromUserdataState, self).__init__(outcomes = ['continue', 'failed'],input_keys = [my_userdata_param])
+
+        self._ok = True
+
+        self._myuserdata = my_userdata_param
+        self._namespace = namespace_prefix
+        ## consider updating the dictinary instead
+
+    def execute(self, userdata):
+        Logger.loginfo("pulled my trigger")
+        
+        if self._ok:
+            return 'continue' # One of the outcomes declared above.
+        return 'failed'
+
+    def on_enter(self, userdata):
+        # This method is called when the state becomes active, i.e. a transition from another state to this one is taken.
+        # It is primarily used to start actions which are associated with this state.
+        Logger.loginfo(f"mama i just killed a man: {self._myuserdata}")
+        param_var = getattr(userdata, self._myuserdata, {})
+        if param_var == {}:
+            Logger.logerr(f"{self._myuserdata} doesn't contain anything. i tried looking in userdata and found no reference of this")
+            self._ok= False
+            return
+        if type(param_var) == dict:
+            param_dic = param_var
+            self._param_dic = param_dic
+            Logger.loginfo(repr(param_dic))
+            Logger.loginfo("put a gun against his head")
+            Logger.loginfo("now he's dead")
+            try:
+                for param, value in param_dic.items():
+                    rospy.set_param(self._namespace+"/"+param, value)
+            except:
+                Logger.logerr(f"something went wrong while trying to set parameters {self._namespace} {repr(param_dic)}")
+                self._ok = False
+        else:
+            Logger.loginfo("okay, not a dict, so we just set it?")
+            value = param_var
+            try:        
+                rospy.set_param(self._namespace, value)
+            except Exception() as e:
+                Logger.logerr(f"something bugged {e}")
+                self._ok = False
+                return 
+        Logger.loginfo("mamma, life had just began")
+        
+    def on_exit(self, userdata):
+        # This method is called when an outcome is returned and another state gets active.
+        # It can be used to stop possibly running processes started by on_enter.
+
+        pass # Nothing to do in this example.
+
+    def on_start(self):
+        # This method is called when the behavior is started.
+        # If possible, it is generally better to initialize used resources in the constructor
+        # because if anything failed, the behavior would not even be started.
+        Logger.loginfo("and now i've thrown it all away")
+
+        pass # Nothing to do in this example.
+
+
+    def on_stop(self):
+        # This method is called whenever the behavior stops execution, also if it is cancelled.
+        # Use this event to clean up things like claimed resources.
+        param_dic = getattr(self, "_param_dic", {})
+        if not param_dic == {}: 
+            for param, value in param_dic.items():
+                try:
+                    rospy.delete_param(self._namespace+"/"+param)
+                except:
+                    pass
+        else:
+            rospy.delete_param(self._namespace)
+

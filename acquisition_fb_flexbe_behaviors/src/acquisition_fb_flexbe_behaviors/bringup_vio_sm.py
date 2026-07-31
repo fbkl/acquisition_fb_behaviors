@@ -86,7 +86,7 @@ class bringup_vioSM(Behavior):
 										VENVTmuxSetupVariableVIOState(session_name=use_session, startup_yaml=tmux_yaml_path+self.vio_yaml_file, append_node=[], append_save_files=[]),
 										transitions={'continue': 'Wait_for_VIO_Start', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off},
-										remapping={'node_start_list': 'disregard', 'save_file_list': 'disregard', 'vio_units': 'vio_units', 'load_env': 'vio_export_vars'})
+										remapping={'node_start_list': 'disregard', 'save_file_list': 'disregard', 'ori_list': 'ori_list', 'vio_units': 'vio_units', 'load_env': 'vio_export_vars'})
 
 			# x:344 y:161
 			OperatableStateMachine.add('Wait_for_VIO_Start',
@@ -99,7 +99,7 @@ class bringup_vioSM(Behavior):
 										VariableMultiServiceCallState(predicate="/calib", prefix=""),
 										transitions={'done': 'finished', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Full, 'failed': Autonomy.Off},
-										remapping={'multi_service_list': 'vio_units'})
+										remapping={'multi_service_list': 'ori_list'})
 
 			# x:572 y:50
 			OperatableStateMachine.add('don_cameras',
