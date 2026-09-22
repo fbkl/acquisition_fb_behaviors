@@ -112,9 +112,9 @@ class Acquire_EverythingSM(Behavior):
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/VIOControl_Acquisition_small_tabs.perspective"
 		tmux_session_name = "testtt"
 		name_tag = "upper"
-		model = "raquegopal"
+		model = "MOBL"
 		model_dir = f"/srv/shared/{model}/"
-		model_name = f"{model}_2026"
+		model_name = f"{model}_ARMS_41"
 		model_file = f"{model_dir}{model_name}.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
 		calib_sound_file = "/srv/host_data/calib.wav"
@@ -123,9 +123,10 @@ class Acquire_EverythingSM(Behavior):
 		vicon_bridge_yaml = "vicon_bridge.yaml"
 		vicon_yaml = "vicon_only.yaml"
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,"DISABLE_ROS1_EOL_WARNINGS":"1"}
-		export_vars = {**common_vars,"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":"torso", "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"FILTER_OUT":self.filter_output,"MODEL_DIR":model_dir}
 		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port,"VICON_DUMMY":self.vicon_dummy}
 		vio_machines = ["rpi5-ubuntu","silver"]
+		base_body = "thorax"
+		export_vars = {**common_vars,"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":base_body, "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"FILTER_OUT":self.filter_output,"MODEL_DIR":model_dir}
 		# x:1420 y:614, x:289 y:786
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
 		_state_machine.userdata.activity_save_dir = ""
