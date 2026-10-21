@@ -56,7 +56,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('run_vicon_controller', False)
 		self.add_parameter('remove_path', '/srv/host_data')
 		self.add_parameter('append_path', 'd:/ViconData')
-		self.add_parameter('vicon_ip', '192.168.1.103')
+		self.add_parameter('vicon_ip', '192.168.10.1')
 		self.add_parameter('vicon_port', 1030)
 		self.add_parameter('session_id', 'SESSION0')
 		self.add_parameter('activity_name', 'walking1')
@@ -109,7 +109,7 @@ class Acquire_EverythingSM(Behavior):
 		model = "MOBL"
 		model_dir = f"/srv/shared/{model}/"
 		model_name = f"{model}_ARMS_41"
-		model_file = f"{model_dir}{model_name}.osim"
+		model_file = f"{model_dir}{model_name}_dual_markerset.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
@@ -177,7 +177,7 @@ class Acquire_EverythingSM(Behavior):
 
 			# x:504 y:314
 			OperatableStateMachine.add('Write_Sto_Srv',
-										VariableMultiServiceCallState(predicate="/write_sto", prefix=""),
+										VariableMultiServiceCallState(predicate="/write", prefix=""),
 										transitions={'done': 'Clear_Loggers', 'failed': 'failed'},
 										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off},
 										remapping={'multi_service_list': 'node_start_list'})
