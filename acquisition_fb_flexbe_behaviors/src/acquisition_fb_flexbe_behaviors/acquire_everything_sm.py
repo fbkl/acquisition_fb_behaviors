@@ -53,7 +53,7 @@ class Acquire_EverythingSM(Behavior):
 		self.name = 'Acquire_Everything'
 
 		# parameters of this behavior
-		self.add_parameter('run_vicon_controller', False)
+		self.add_parameter('run_vicon_controller', True)
 		self.add_parameter('remove_path', '/srv/host_data')
 		self.add_parameter('append_path', 'd:/ViconData')
 		self.add_parameter('vicon_ip', '192.168.10.1')
@@ -69,7 +69,7 @@ class Acquire_EverythingSM(Behavior):
 		self.add_parameter('record_rosbag', False)
 		self.add_parameter('rosmaster', 'raspberrypi')
 		self.add_parameter('run_vicon_bridge', True)
-		self.add_parameter('vicon_dummy', True)
+		self.add_parameter('vicon_dummy', False)
 		self.add_parameter('filter_output', False)
 
 		# references to used behaviors

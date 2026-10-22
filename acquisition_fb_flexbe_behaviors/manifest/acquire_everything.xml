@@ -22,7 +22,7 @@
 	<!-- Available Parameters -->
 	<params>
 
-		<param type="boolean" name="run_vicon_controller" default="False" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
+		<param type="boolean" name="run_vicon_controller" default="True" label="run_vicon_controller" hint="Sets the run_vicon_controller" />
 
 		<param type="text" name="remove_path" default="/srv/host_data" label="remove_path" hint="Sets the prefix to be removed from the save path" />
 
@@ -63,7 +63,7 @@
 
 		<param type="boolean" name="run_vicon_bridge" default="True" label="run_vicon_bridge" hint="Sets the run_vicon_bridge" />
 
-		<param type="boolean" name="vicon_dummy" default="True" label="vicon_dummy" hint="Sets the vicon_dummy" />
+		<param type="boolean" name="vicon_dummy" default="False" label="vicon_dummy" hint="Sets the vicon_dummy" />
 
 		<param type="boolean" name="filter_output" default="False" label="filter_output" hint="Sets the filter_output" />
 
