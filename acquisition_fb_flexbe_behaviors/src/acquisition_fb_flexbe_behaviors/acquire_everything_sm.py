@@ -105,11 +105,11 @@ class Acquire_EverythingSM(Behavior):
 		tmux_yaml_path = self.find_pkg("acquisition_of_raw_data")+"/config/"
 		combined_perspective_file = self.find_pkg("rqt_acquisition")+"/VIOControl_Acquisition_small_tabs.perspective"
 		tmux_session_name = "testtt"
-		name_tag = "upper"
-		model = "MOBL"
+		name_tag = "arm"
+		model = "iiwa__"
 		model_dir = f"/srv/shared/{model}/"
-		model_name = f"{model}_ARMS_41"
-		model_file = f"{model_dir}{model_name}_dual_markerset.osim"
+		model_name = f"iiwa14.osim"
+		model_file = f"{model_dir}{model_name}_custom.osim"
 		moment_arm_lib = f"{model_dir}libMomentArm_{model_name}"
 		calib_sound_file = "/srv/host_data/calib.wav"
 		ik_yaml = "plus_ik.yaml"
@@ -119,7 +119,7 @@ class Acquire_EverythingSM(Behavior):
 		common_vars = {"SHOW_VIZ_OTHER":self.show_viz_extensive,"DISABLE_ROS1_EOL_WARNINGS":"1"}
 		vicon_vars = {"REMOVE":self.remove_path,"APPEND":self.append_path,"VICON_IP":self.vicon_ip,"VICON_PORT":self.vicon_port,"VICON_DUMMY":self.vicon_dummy}
 		vio_machines = ["rpi5-ubuntu","silver"]
-		base_body = "thorax"
+		base_body = "link_0"
 		export_vars = {**common_vars,"ROSLAUNCH_SSH_UNKNOWN":"1","MACHINE":self.rosmaster,"MODEL_FILE":model_file,"BASE_BODY":base_body, "NAME_TAG":"upper","MOMENT_ARM_LIB":moment_arm_lib,"NUM_PROC_SO":4,"USE_AR":self.use_ar_markers_in_ik,"COMBINED_ACQUISITION":self.combined_acquisition,"FILTER_OUT":self.filter_output,"MODEL_DIR":model_dir}
 		# x:1323 y:325, x:123 y:608
 		_state_machine = OperatableStateMachine(outcomes=['finished', 'failed'])
