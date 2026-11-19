@@ -127,7 +127,7 @@ class Acquire_EverythingSM(Behavior):
 		_state_machine.userdata.activity_save_name = ""
 		_state_machine.userdata.node_start_list = []
 		_state_machine.userdata.use_vicon_controller = self.run_vicon_controller
-		_state_machine.userdata.parked_nodes = ["/vio/ik"]
+		_state_machine.userdata.parked_nodes = ["/vio/ik","/vicon/ik"]
 		_state_machine.userdata.export_vars = export_vars
 		_state_machine.userdata.should_load_ar = self.use_ar_markers_in_ik
 		_state_machine.userdata.use_combined_acquisition = self.combined_acquisition
@@ -365,6 +365,12 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'failed': Autonomy.Inherit, 'ok': Autonomy.Inherit},
 										remapping={'node_start_list': 'node_start_list', 'use_vicon_controller': 'use_vicon_controller', 'export_vars': 'export_vars', 'should_load_ar': 'should_load_ar', 'use_combined_acquisition': 'use_combined_acquisition', 'vicon_vars': 'vicon_vars', 'common_vars': 'common_vars', 'save_file_list': 'save_file_list', 'use_vicon_bridge': 'use_vicon_bridge', 'ori_list': 'ori_list'})
 
+			# x:848 y:257
+			OperatableStateMachine.add('Pose_Parked_Iks',
+										MultiServiceCallState(multi_service_list=["/vicon/ik/pose_player","/vio/ik/pose_player"], predicate="/pose_it", prefix="", wait_to_start=False, timeout=60),
+										transitions={'done': 'Get_Ready_For_Calibration', 'failed': 'failed'},
+										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
+
 			# x:1107 y:323
 			OperatableStateMachine.add('Record_Another',
 										OperatorDecisionState(outcomes=["yes", "no"], hint=None, suggestion=None),
@@ -423,10 +429,10 @@ class Acquire_EverythingSM(Behavior):
 										autonomy={'true': Autonomy.Off, 'false': Autonomy.Off},
 										remapping={'input_value': 'use_vicon_bridge'})
 
-			# x:856 y:231
+			# x:845 y:181
 			OperatableStateMachine.add('WaitIkReady',
 										WaitForTrueMessages(topics_list=["/vio/ik/ready"], custom_message="Waiting for VIO IK to be ready", timeout=600),
-										transitions={'continue': 'Get_Ready_For_Calibration', 'failed': 'failed'},
+										transitions={'continue': 'Pose_Parked_Iks', 'failed': 'failed'},
 										autonomy={'continue': Autonomy.Off, 'failed': Autonomy.Off})
 
 			# x:465 y:262
