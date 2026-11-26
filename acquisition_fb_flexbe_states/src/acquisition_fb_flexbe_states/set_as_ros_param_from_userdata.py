@@ -91,5 +91,7 @@ class SetRosParamFromUserdataState(EventState):
                 except:
                     pass
         else:
-            rospy.delete_param(self._namespace)
-
+            try:
+                rospy.delete_param(self._namespace)
+            except: ## if the param is no longer there, we don't care
+                pass

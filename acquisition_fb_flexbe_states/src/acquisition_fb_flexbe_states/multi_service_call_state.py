@@ -2,8 +2,9 @@
 import rospy
 
 from flexbe_core import EventState, Logger
-from acquisition_of_raw_data import multiservice_plex
+#from acquisition_of_raw_data import multiservice_plex
 #from acquisition_of_raw_data import multiservice_plex_waiting
+from acquisition_of_raw_data.multiservice_plex_waiting_strange_idea import MultiServiceCaller
 from std_srvs.srv import EmptyRequest
 import traceback
 
@@ -36,7 +37,7 @@ class MultiServiceCallState(EventState):
         Logger.loginfo("received list of services to be called: %s" % self._multi_service_list)
         ## This is not working
         #self._multi_service_plex = multiservice_plex_waiting.WaitingMultiServiceCaller(self._multi_service_list, wait_to_start=wait_to_start, wait_for_responses = True, timeout=rospy.Duration(timeout))
-        self._multi_service_plex = multiservice_plex.MultiServiceCaller(self._multi_service_list, wait_to_start=wait_to_start, wait_for_responses = True, timeout=rospy.Duration(timeout))
+        self._multi_service_plex = MultiServiceCaller(self._multi_service_list, wait_to_start=wait_to_start, wait_for_responses = True, timeout=rospy.Duration(timeout))
 
         # The constructor is called when building the state machine, not when actually starting the behavior.
         # Thus, we cannot save the starting time now and will do so later.

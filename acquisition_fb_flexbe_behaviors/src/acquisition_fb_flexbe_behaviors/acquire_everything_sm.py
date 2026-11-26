@@ -367,9 +367,9 @@ class Acquire_EverythingSM(Behavior):
 
 			# x:848 y:257
 			OperatableStateMachine.add('Pose_Parked_Iks',
-										MultiServiceCallState(multi_service_list=["/vicon/ik/pose_player","/vio/ik/pose_player"], predicate="/pose_it", prefix="", wait_to_start=False, timeout=60),
+										MultiServiceCallState(multi_service_list=["/vicon/ik/pose_player","/vio/ik/pose_player"], predicate="/pose_it", prefix="", wait_to_start=True, timeout=60),
 										transitions={'done': 'Get_Ready_For_Calibration', 'failed': 'failed'},
-										autonomy={'done': Autonomy.Off, 'failed': Autonomy.Off})
+										autonomy={'done': Autonomy.Full, 'failed': Autonomy.Off})
 
 			# x:1107 y:323
 			OperatableStateMachine.add('Record_Another',
